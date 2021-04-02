@@ -63,48 +63,68 @@ void setup() {
   port2.begin(BAUTRATE);
 }
 
+long long time = millis();
+bool change = false;
+
 void loop() {
-  readSoftSerail(gpsstruct[0]);
-  readSoftSerail(gpsstruct[1]);
+  if(change){
+    readSoftSerail(gpsstruct[0]);
+  }else{
+    readSoftSerail(gpsstruct[1]);
+  }
+  if(millis()-time > 10000){
+    time = millis();
+    change =! change;
+    Serial.println("----------------------------------------------------------------------------------");
+  }
 }
 
 void readSoftSerail(GPSStruct gps_struct){
-  Serial.print(gps_struct.name + ": ");
+  //Serial.print(gps_struct.name + ": ");
 
   gps_struct.soft->listen();
-  while (gps_struct.soft->available() > 0) {
-    char inByte = gps_struct.soft->read();
-    gps_struct.gps.encode(inByte);
+  if(gps_struct.soft->available() > 0){
+    while (gps_struct.soft->available() > 0) {
+      char inByte = gps_struct.soft->read();
+      gps_struct.gps.encode(inByte);
+      Serial.print(inByte);
+    }
+    Serial.println(gps_struct.gps.charsProcessed());
+    if(gps_struct.gps.charsProcessed() > 600){
+      displayGPS(gps_struct.gps, gps_struct.row, gps_struct.name);
+    }
+    printGPS(gps_struct.gps);
   }
-
-  printGPS(gps_struct.gps);
-  displayGPS(gps_struct.gps, gps_struct.row, gps_struct.name);
-  Serial.println();
 }
+
+
 
 void displayGPS(TinyGPSPlus gps, int row, String name){
   GPSSats = gps.satellites.value();
+    if(gps.satellites.isValid()){
 
-  lcd.setCursor(0, row);
-  lcd.print(name);
+    lcd.setCursor(0, row);
+    lcd.print(name);
 
-  lcd.setCursor(5, row);
-  lcd.print(GPSSats);
+    lcd.setCursor(5, row);
+    lcd.print(GPSSats);
 
-  GPSLat = gps.location.lat();
-  GPSLon = gps.location.lng();
+    GPSLat = gps.location.lat();
+    GPSLon = gps.location.lng();
 
-  lcd.setCursor(7, row);
-  lcd.print(GPSLat);
+    lcd.setCursor(7, row);
+    lcd.print(GPSLat);
 
-  lcd.setCursor(11, row);
-  lcd.print(" ");
-  lcd.print(GPSLon);
+    lcd.setCursor(11, row);
+    lcd.print(" ");
+    lcd.print(GPSLon);
+  } 
 }
 
 void printGPS(TinyGPSPlus gps){
   float tempfloat;
 
+  
   GPSLat = gps.location.lat();
   GPSLon = gps.location.lng();
   GPSAlt = gps.altitude.meters();
@@ -123,4 +143,5 @@ void printGPS(TinyGPSPlus gps){
   Serial.print(F(",HDOP,"));
   Serial.print(tempfloat, 2);
   Serial.println();
+
 }
