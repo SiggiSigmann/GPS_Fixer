@@ -6,6 +6,9 @@
 #define BAUTRATE 9600
 #define GPS_Number 2
 #define DISPLAY_MODIE 2
+//How often to change gps module. Shoulb be double the sending duration of the module to make 
+//shure all gate could be read. (10000 => 10s)
+#define REFRESHRATE 10000
 
 //Debug level
 #define DEBUG 0
@@ -135,7 +138,7 @@ void loop() {
 
   //change only when displaymode is online mode (mode 0)
   if(oldmode == 0){
-    if(millis()-time > 10000){
+    if(millis()-time > REFRESHRATE){
       time = millis();
       gpsselected = gpsselected+1 % GPS_Number;
     }
