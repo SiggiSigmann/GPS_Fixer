@@ -1,3 +1,4 @@
 refresh when read in was succesfull
 display when gps modlue send no data in a time span
 scroll display in multimode and display more data
+fix bug in one line mode weher display is cleared
