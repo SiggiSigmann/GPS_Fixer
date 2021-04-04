@@ -74,6 +74,8 @@ void setup() {
 
   // LCD
   lcd.begin(16, 2);
+  //lcd.blink();
+  lcd.cursor();;
 
   //Serial communication
   #if DEBUG > 1
@@ -166,9 +168,9 @@ void readSoftSerail(GPSStruct gps_struct){
       TinyGPSPlus temp = gps_struct.gps;
       gps_struct.gps = gpsConverter;
       gpsConverter = temp;
-
-      displayGPS(gps_struct.gps, gps_struct.row, gps_struct.name);
     }
+
+    displayGPS(gps_struct.gps, gps_struct.row, gps_struct.name);
   }
 }
 
@@ -256,5 +258,8 @@ void display_oneline(TinyGPSPlus gps, int row, char name){
     lcd.setCursor(10, row);
     lcd.print(" ");
     lcd.print(GPSLon);
+
+    //set curser under gps name
+    lcd.setCursor(0, row);
   } 
 }
