@@ -7,6 +7,9 @@
 #define GPS_Number 2
 #define DISPLAY_MODIE 2
 
+//Debug level
+#define DEBUG 0
+
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
 const int rs = 6, en = 7, d4 = 5, d5 = 4, d6 = 13, d7 = 12;
@@ -18,6 +21,7 @@ TinyGPSPlus gps1;
 SoftwareSerial port2(8, 9);
 TinyGPSPlus gps2;
 
+//used to convert Serial input
 TinyGPSPlus gpsConverter;
 
 struct GPSStruct {
@@ -56,11 +60,13 @@ void modeSelection();
 void gpsSeclection();
 
 void setup() {
+  //GPS1
   gpsstruct[0].soft = &port1;
   gpsstruct[0].gps = gps1;
   gpsstruct[0].name = '1';
   gpsstruct[0].row = 0;
 
+  //GPS2
   gpsstruct[1].soft = &port2;
   gpsstruct[1].gps = gps2;
   gpsstruct[1].name = '2';
@@ -70,8 +76,10 @@ void setup() {
   lcd.begin(16, 2);
 
   //Serial communication
-  Serial.begin(BAUTRATE);
-  while (!Serial) {}
+  #if DEBUG > 1
+    Serial.begin(BAUTRATE);
+    while (!Serial) {}
+  #endif
 
   //software serial
   port1.begin(BAUTRATE);
@@ -82,11 +90,17 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(2), modeSelection, RISING);
   pinMode(3, INPUT);
   attachInterrupt(digitalPinToInterrupt(3), gpsSeclection, RISING);
+
+  for(int i = 0; i < GPS_Number;i++){
+    displayGPS(gpsstruct[i].gps, gpsstruct[i].row, gpsstruct[i].name);
+  }
 }
 
 //### interrupt
 void modeSelection(){
   displayMode = (displayMode+1) % DISPLAY_MODIE;
+
+  //update Display
   switch (displayMode){
     case 1:
       displayGPS(gpsstruct[gpsselected].gps, gpsstruct[gpsselected].row, gpsstruct[gpsselected].name);
@@ -100,6 +114,8 @@ void modeSelection(){
 }
 void gpsSeclection(){
   gpsselected = (gpsselected+1) % GPS_Number;
+
+  //update Display
   switch (displayMode){
     case 1:
       displayGPS(gpsstruct[gpsselected].gps, gpsstruct[gpsselected].row, gpsstruct[gpsselected].name);
@@ -112,6 +128,7 @@ void gpsSeclection(){
 
 //### Loop
 void loop() {
+  //read gps data and update display
   readSoftSerail(gpsstruct[gpsselected]);
 
   //change only when displaymode is online mode (mode 0)
@@ -119,7 +136,6 @@ void loop() {
     if(millis()-time > 10000){
       time = millis();
       gpsselected = gpsselected+1 % GPS_Number;
-      //Serial.println("Change");
     }
   }
 }
@@ -132,13 +148,20 @@ void readSoftSerail(GPSStruct gps_struct){
     while (gps_struct.soft->available() > 0) {
       char inByte = gps_struct.soft->read();
       gpsConverter.encode(inByte);
-      //Serial.print(inByte);
+      
+      #if DEBUG > 1
+        Serial.print(inByte);
+      #endif
     }
 
-   // Serial.println("Processed: "+gpsConverter.charsProcessed());
+    #if DEBUG > 1
+      Serial.println("Processed: "+gpsConverter.charsProcessed());
+    #endif
 
     if(gpsConverter.charsProcessed() > 400){
-      //Serial.print(gps_struct.name + " :");
+      #if DEBUG > 1
+        Serial.print(gps_struct.name + " :");
+      #endif
 
       TinyGPSPlus temp = gps_struct.gps;
       gps_struct.gps = gpsConverter;
@@ -151,11 +174,10 @@ void readSoftSerail(GPSStruct gps_struct){
 
 //### lcd
 void displayGPS(TinyGPSPlus gps, int row, char name){
-  //Serial.print(displayMode);
+  //clean if new mode is selected
   if(oldmode != displayMode){
     oldmode = displayMode;
     lcd.clear();
-    //Serial.println("clear");
   }
 
   switch(displayMode){
@@ -168,47 +190,57 @@ void displayGPS(TinyGPSPlus gps, int row, char name){
   }
 }
 
+//display multimode with more collums
 void display_multi(TinyGPSPlus gps, char name){
-  GPSSats = gps.satellites.value();
   if(gps.satellites.isValid()){
+    GPSSats = gps.satellites.value();
+
+    //first line
     lcd.setCursor(0, 0);
     lcd.print(name);
     lcd.print(":");
 
+    //satellites
     lcd.setCursor(2, 0);
     lcd.print(GPSSats);
     if(GPSSats < 10){
       lcd.print(" ");
     }
 
+    //speed
     lcd.setCursor(5,0);
-    lcd.print(gps.speed.mph());
+    lcd.print(gps.speed.kmph());
 
+    //Altitute
     lcd.setCursor(10,0);
     lcd.print(gps.altitude.meters());
 
+    //second line
     GPSLat = gps.location.lat();
     GPSLon = gps.location.lng();
 
+    //location
     lcd.setCursor(0, 1);
     lcd.print(GPSLat,7);
-
     lcd.setCursor(8, 1);
     lcd.print(" ");
-
     lcd.setCursor(9, 1);
     lcd.print(GPSLon,7);
   } 
 }
 
+//diesplay gps per line
 void display_oneline(TinyGPSPlus gps, int row, char name){
-  GPSSats = gps.satellites.value();
   if(gps.satellites.isValid()){
+    GPSSats = gps.satellites.value();
+
+    //name
     lcd.setCursor(0, row);
     lcd.print(name);
     lcd.setCursor(1, row);
     lcd.print(":");
 
+    //satellites
     lcd.setCursor(2, row);
     lcd.print(GPSSats);
     if(GPSSats < 10){
@@ -218,9 +250,9 @@ void display_oneline(TinyGPSPlus gps, int row, char name){
     GPSLat = gps.location.lat();
     GPSLon = gps.location.lng();
 
+    //location
     lcd.setCursor(5, row);
     lcd.print(GPSLat);
-
     lcd.setCursor(10, row);
     lcd.print(" ");
     lcd.print(GPSLon);
