@@ -10,6 +10,7 @@
 //How often to change gps module. Shoulb be double the sending duration of the module to make 
 //shure all gate could be read. (10000 => 10s)
 #define REFRESHRATE 10000
+#define DISPLAYRATE 1000
 
 //Debug level
 #define DEBUG 0
@@ -53,6 +54,8 @@ int displayMode = 0;
 int oldmode = 0;
 // Variables for gpsseclection
 int gpsselected = 0;
+//Refres display variable
+long long int displayRefresh = millis();
 
 //method declaration
 void printGPS(TinyGPSPlus);
@@ -128,8 +131,11 @@ void loop() {
     }
   }
 
-  //update screwn
-  displayGPS();
+  if(millis()-displayRefresh > DISPLAYRATE){
+    //update screwn
+    displayGPS();
+    displayRefresh = millis();
+  }
 }
 
 //### Serial
