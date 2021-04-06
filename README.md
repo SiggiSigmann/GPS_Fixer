@@ -11,4 +11,4 @@ GPS2 is connected to rx = 8, tx = 9;
 Made with https://www.circuit-diagram.org
 
 # Bug
-After choosing another Module the display prints Missing even it is not true. After the next refresh cycle this it will display the values correctly.
+When changeing the Modul via the Button it displays 0000.
