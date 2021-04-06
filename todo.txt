@@ -1,1 +1,0 @@
-scroll display in multimode and display more data
