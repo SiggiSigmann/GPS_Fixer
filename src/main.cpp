@@ -3,7 +3,6 @@
 #include <TinyGPS++.h>
 #include <LiquidCrystal.h>
 #include <Wire.h>
-//#include <MemoryFree.h>
 
 #define BAUTRATE 9600
 #define GPS_Number 2
