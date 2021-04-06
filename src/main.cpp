@@ -3,6 +3,7 @@
 #include <TinyGPS++.h>
 #include <LiquidCrystal.h>
 #include <Wire.h>
+//#include <MemoryFree.h>
 
 #define BAUTRATE 9600
 #define GPS_Number 2
@@ -13,7 +14,7 @@
 #define DISPLAYRATE 1000
 
 //Debug level
-#define DEBUG 0
+#define DEBUG 2
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -23,15 +24,13 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 //rx, tx
 SoftwareSerial port1(10, 11);
 TinyGPSPlus gps1;
+
 SoftwareSerial port2(8, 9);
 TinyGPSPlus gps2;
 
-//used to convert Serial input
-TinyGPSPlus gpsConverter;
-
 struct GPSStruct {
     SoftwareSerial *soft;
-    TinyGPSPlus gps;
+    TinyGPSPlus encode;
     char name;
     int row;
 };
@@ -47,7 +46,7 @@ uint32_t GPSstarttimemS;
 uint32_t GPSendtimemS;
 
 //variabel for SoftSerial change
-long long time = millis();
+unsigned long time = millis();
 bool change = false;
 //variabel for display mode
 int displayMode = 0;
@@ -55,12 +54,12 @@ int oldmode = 0;
 // Variables for gpsseclection
 int gpsselected = 0;
 //Refres display variable
-long long int displayRefresh = millis();
+unsigned long displayRefresh = millis();
 
 //method declaration
 void printGPS(TinyGPSPlus);
 void displayGPS();
-void readSoftSerail(GPSStruct);
+void readSoftSerail();
 void display_multi(TinyGPSPlus gps, char name);
 void display_oneline(TinyGPSPlus gps, int row, char name);
 void modeSelection();
@@ -70,13 +69,13 @@ void setup() {
   Wire.setClock(10000);
   //GPS1
   gpsstruct[0].soft = &port1;
-  gpsstruct[0].gps = gps1;
+  gpsstruct[0].encode = gps1;
   gpsstruct[0].name = '1';
   gpsstruct[0].row = 0;
 
   //GPS2
   gpsstruct[1].soft = &port2;
-  gpsstruct[1].gps = gps2;
+  gpsstruct[1].encode = gps2;
   gpsstruct[1].name = '2';
   gpsstruct[1].row = 1;
 
@@ -115,16 +114,17 @@ void gpsSeclection(){
 
   time = millis();
   displayGPS();
-
 }
 
 //### Loop
 void loop() {
+  //Serial.println(freeMemory());
+  //Serial.println(gpsselected);
   //read gps data and update display
-  readSoftSerail(gpsstruct[gpsselected]);
+  readSoftSerail();
 
   //change only when displaymode is online mode (mode 0)
-  if(oldmode == 0){
+  if(displayMode == 0){
     if(millis()-time > REFRESHRATE){
       time = millis();
       gpsselected = gpsselected+1 % GPS_Number;
@@ -133,37 +133,48 @@ void loop() {
 
   if(millis()-displayRefresh > DISPLAYRATE){
     //update screwn
+    //Serial.println("display");
     displayGPS();
     displayRefresh = millis();
   }
 }
 
 //### Serial
-void readSoftSerail(GPSStruct gps_struct){
-  gps_struct.soft->listen();
-  if(gps_struct.soft->available() > 0){
+void readSoftSerail(){
+  gpsstruct[gpsselected].soft->listen();
+  if(gpsstruct[gpsselected].soft->available() > 0){
 
-    while (gps_struct.soft->available() > 0) {
-      char inByte = gps_struct.soft->read();
-      gpsConverter.encode(inByte);
+    while (gpsstruct[gpsselected].soft->available() > 0) {
+      char inByte = gpsstruct[gpsselected].soft->read();
+      gpsstruct[gpsselected].encode.encode(inByte);
       
       #if DEBUG > 1
-        Serial.print(inByte);
+        //Serial.print(inByte);
       #endif
     }
 
     #if DEBUG > 1
-      Serial.println("Processed: "+gpsConverter.charsProcessed());
+      //Serial.print("Processed: ");
+      //Serial.println(gpsstruct[gpsselected].encode.charsProcessed());
     #endif
 
-    if(gpsConverter.charsProcessed() > 400){
+    if(gpsstruct[gpsselected].encode.charsProcessed() > 400){
       #if DEBUG > 1
-        Serial.print(gps_struct.name + " :");
+        //Serial.print(gps_struct.name + " :");
       #endif
 
-      TinyGPSPlus temp = gps_struct.gps;
-      gps_struct.gps = gpsConverter;
-      gpsConverter = temp;
+      if(gpsstruct[gpsselected].encode.satellites.isValid()){
+        gpsselected = (gpsselected+1) % GPS_Number;
+
+        time = millis();
+        //Serial.println(gpsstruct[gpsselected].encode.satellites.value());
+        //Serial.println("ex");
+        //TinyGPSPlus temp = gpsstruct[gpsselected].encode;
+        //gpsstruct[gpsselected].toDisplay = gpsstruct[gpsselected].encode;
+        //gpsstruct[gpsselected].encode = temp;
+        //Serial.println(gpsstruct[gpsselected].toDisplay.satellites.value());
+      }
+      
     }
   }
 }
@@ -182,11 +193,11 @@ void displayGPS(){
   //update Display
   switch (displayMode){
     case 1:
-      display_multi(gpsstruct[gpsselected].gps, gpsstruct[gpsselected].name);
+      display_multi(gpsstruct[gpsselected].encode, gpsstruct[gpsselected].name);
       break;
     default:
       for(int i = 0; i < GPS_Number;i++){
-        display_oneline(gpsstruct[i].gps, gpsstruct[i].row, gpsstruct[i].name);
+        display_oneline(gpsstruct[i].encode, gpsstruct[i].row, gpsstruct[i].name);
       }
 
       //set curser under gps name
