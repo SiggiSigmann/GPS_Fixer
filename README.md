@@ -8,6 +8,7 @@ GPS1 is connected to rx = 10, tx = 11;
 GPS2 is connected to rx = 8, tx = 9;
 
 ![Circuit image](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/circuit.png)
+Made with https://www.circuit-diagram.org
 
 # Bug
 After choosing another Module the display prints Missing even it is not true. After the next refresh cycle this it will display the values correctly.
