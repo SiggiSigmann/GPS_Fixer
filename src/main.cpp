@@ -15,7 +15,7 @@
 #define MULTIDISPLAYSREFRESHRATE 5000
 
 //Debug level
-#define DEBUG 2
+#define DEBUG 0
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -114,8 +114,6 @@ void setup() {
 
 //### Loop #######################################################################
 void loop() {
-  //Serial.println(freeMemory());
-  //Serial.println(gpsselected);
   //read gps data and update display
   readSoftSerail();
 
@@ -166,18 +164,18 @@ void readSoftSerail(){
       gpsstruct[gpsselected].encode.encode(inByte);
       
       #if DEBUG > 1
-        //Serial.print(inByte);
+        Serial.print(inByte);
       #endif
     }
 
     #if DEBUG > 1
-      //Serial.print("Processed: ");
-      //Serial.println(gpsstruct[gpsselected].encode.charsProcessed());
+      Serial.print("Processed: ");
+      Serial.println(gpsstruct[gpsselected].encode.charsProcessed());
     #endif
 
     if(gpsstruct[gpsselected].encode.charsProcessed() > 400){
       #if DEBUG > 1
-        //Serial.print(gps_struct.name + " :");
+        Serial.print(gps_struct.name + " :");
       #endif
 
       //change gps module if encoding was sucessfull
@@ -189,24 +187,21 @@ void readSoftSerail(){
   }
 }
 
+//change which GPS modules will be updated and displayed
 void changeGPSModule(){
   gpsselected = (gpsselected+1) % GPS_Number;
   time = millis();
+
+  if(displayMode == 1){
+    multiMode = 0;
+    multichangeInterval = millis();
+  }
 
   displayGPS();
 }
 
 //### lcd ############################################################################
 void displayGPS(){
-  //clean if new mode is selected
-  if(oldmode != displayMode){
-    oldmode = displayMode;
-    lcd.setCursor(0, 0);
-    lcd.print("                ");
-    lcd.setCursor(0, 1);
-    lcd.print("                ");
-  }
-
   //update Display
   switch (displayMode){
     case 1:
