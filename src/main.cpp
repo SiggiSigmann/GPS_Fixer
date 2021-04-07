@@ -7,9 +7,12 @@
 #define BAUTRATE 9600
 #define GPS_NUMBER 2
 #define WAITFORSIGNALTIME 5000
+#define DISPLAY_MODIE 2
+#define MULTIMODETIME 2000
+#define MULTIDISPLAYS 4
 
 //Debug level
-#define DEBUG 21
+#define DEBUG 0
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -35,6 +38,9 @@ GPSStruct gpsstruct[GPS_NUMBER];
 
 // Variables for gpsseclection
 int gpsselected = 0;
+int displayMode = 0;
+int multiMode = 0;
+unsigned long modeTime;
 
 //method declaration
 void modeSelection();
@@ -44,6 +50,11 @@ void readSoftSerail();
 void updateDisplay();
 
 void display_oneline(TinyGPSPlus, short, char);
+void display_multi(TinyGPSPlus gps, short row, char name);
+void display_multi_1(TinyGPSPlus gps, char name);
+void display_multi_2(TinyGPSPlus gps, char name);
+void display_multi_3(TinyGPSPlus gps, char name);
+void display_multi_4(TinyGPSPlus gps, char name);
 
 void setup() {
   //lower wire speed to improve lcd accurency
@@ -87,6 +98,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(2), modeSelection, RISING);
   pinMode(3, INPUT);
   attachInterrupt(digitalPinToInterrupt(3), gpsSeclection, RISING);
+
+  modeTime = millis();
 }
 
 //### Loop #######################################################################
@@ -100,7 +113,8 @@ void loop() {
  * For both buttons
 */
 void modeSelection(){
-  //displayMode = (displayMode+1) % DISPLAY_MODIE;
+  displayMode = (displayMode+1) % DISPLAY_MODIE;
+  multiMode = 0;
 }
 
 void gpsSeclection(){
@@ -143,7 +157,9 @@ void readSoftSerail(){
       #endif
 
       //change Module if valid
-      gpsSeclection();
+      if(displayMode == 0){
+        gpsSeclection();
+      }
     }
 
     #if DEBUG > 1
@@ -164,7 +180,9 @@ void readSoftSerail(){
         Serial.println("  missing");
       #endif
 
-      gpsSeclection();
+      if(displayMode == 0){
+        gpsSeclection();
+      }
     }
   }
 }
@@ -172,28 +190,32 @@ void readSoftSerail(){
 /*### display #################################################################
  * update display
 */
-bool checkForUpdate(TinyGPSPlus gps){
-  return (gps.location.isUpdated() || gps.satellites.isUpdated());
-}
-
 void updateDisplay(){
-  for (short i = 0; i < GPS_NUMBER; i++){
-    //check if update is needed
-    if(!gpsstruct[i].missing){
-      gpsstruct[i].lcdOnMissing = false;
-      if(checkForUpdate(gpsstruct[i].encode)){
-        display_oneline(gpsstruct[i].encode, i, gpsstruct[i].name);
+  switch(displayMode){
+    case 0:
+      for (short i = 0; i < GPS_NUMBER; i++){
+        //check if update is needed
+        if(!gpsstruct[i].missing){
+          gpsstruct[i].lcdOnMissing = false;
+          if(gpsstruct[i].encode.location.isUpdated() || gpsstruct[i].encode.satellites.isUpdated()){
+            display_oneline(gpsstruct[i].encode, i, gpsstruct[i].name);
+          }
+        }else{
+          if(!gpsstruct[i].lcdOnMissing){
+            gpsstruct[i].lcdOnMissing = true;
+            Serial.println("update missing");
+            lcd.setCursor(0,i);
+            lcd.print("Missing         ");
+          }
+        }
       }
-    }else{
-      if(!gpsstruct[i].lcdOnMissing){
-        gpsstruct[i].lcdOnMissing = true;
-        Serial.println("update missing");
-        lcd.setCursor(0,i);
-        lcd.print("Missing         ");
-      }
-    }
+      lcd.setCursor(0,gpsselected);
+      break;
+
+    case 1:
+      display_multi(gpsstruct[gpsselected].encode, gpsselected, gpsstruct[gpsselected].name);
+      break;
   }
-  lcd.setCursor(0,gpsselected);
 }
 
 //diesplay gps per line
@@ -216,4 +238,114 @@ void display_oneline(TinyGPSPlus gps, short row, char name){
   lcd.setCursor(10, row);
   lcd.print(" ");
   lcd.print(gps.location.lng());
+}
+
+//display multimode with more collums
+void display_multi(TinyGPSPlus gps, short row, char name){
+  switch(multiMode){
+    case 0:
+      display_multi_1(gps, name);
+      break;
+    case 1:
+      display_multi_2(gps, name);
+      break;
+    case 2:
+      display_multi_3(gps, name);
+      break;
+    case 3:
+      display_multi_4(gps, name);
+      break;
+  }
+
+  if(millis()-modeTime >MULTIMODETIME){
+    modeTime = millis();
+    multiMode = (multiMode+1) % MULTIDISPLAYS;
+  }
+}
+
+void display_multi_1(TinyGPSPlus gps, char name){
+  //first line
+  lcd.setCursor(0, 0);
+  lcd.print(name);
+
+  //location
+  lcd.print("La");
+  float lat = gps.location.lat();
+  if(lat < 10.0){
+    lcd.print(" ");
+  }
+  lcd.print(gps.location.lat(),10);
+
+  lcd.setCursor(0, 1);
+  lcd.print(" Lo");
+  float lng = gps.location.lng();
+  if(lng < 10.0){
+    lcd.print(" ");
+  }
+  lcd.print(lng,10);
+}
+
+void display_multi_2(TinyGPSPlus gps, char name){
+  //first line
+  lcd.setCursor(0, 0);
+  lcd.print(name);
+
+  lcd.print("Date ");
+  if(gps.date.day() < 10){
+    lcd.print(" ");
+  }
+  lcd.print(gps.date.day());
+  lcd.print(":");
+  if(gps.date.month() < 10){
+    lcd.print(" ");
+  }
+  lcd.print(gps.date.month());
+  lcd.print(":");
+  lcd.print(gps.date.year());
+  lcd.print("  ");
+
+  lcd.setCursor(0, 1);
+  lcd.print(" Time ");
+  lcd.print(gps.time.hour());
+  lcd.print(":");
+  lcd.print(gps.time.minute());
+  lcd.print(":");
+  lcd.print(gps.time.second());
+  lcd.print("  ");
+
+}
+
+void display_multi_3(TinyGPSPlus gps, char name){
+  //first line
+  lcd.setCursor(0, 0);
+  lcd.print(name);
+
+  lcd.print("SA ");
+  int sat = gps.satellites.value();
+  lcd.print(sat);
+  if(sat < 10){
+    lcd.print(" ");
+  }
+  lcd.print(" COR ");
+  lcd.print(gps.course.deg(), 3);
+
+  lcd.setCursor(0, 1);
+  lcd.print(" kmh ");
+  lcd.print(gps.speed.kmph(),2);
+  lcd.print("       ");
+}
+
+void display_multi_4(TinyGPSPlus gps, char name){
+  //first line
+  lcd.setCursor(0, 0);
+  lcd.print(name);
+
+  lcd.print("Alt  ");
+  lcd.print(gps.altitude.meters(), 4);
+  lcd.print("          ");
+
+  lcd.setCursor(0,1);
+  lcd.print(" Hdop ");
+  lcd.print(gps.hdop.value());
+  lcd.print("          ");
 }
