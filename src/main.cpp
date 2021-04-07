@@ -115,6 +115,9 @@ void loop() {
 void modeSelection(){
   displayMode = (displayMode+1) % DISPLAY_MODIE;
   multiMode = 0;
+
+  gpsstruct[0].lcdOnMissing = false;
+  gpsstruct[1].lcdOnMissing = false;
 }
 
 void gpsSeclection(){
@@ -203,7 +206,6 @@ void updateDisplay(){
         }else{
           if(!gpsstruct[i].lcdOnMissing){
             gpsstruct[i].lcdOnMissing = true;
-            Serial.println("update missing");
             lcd.setCursor(0,i);
             lcd.print("Missing         ");
           }
@@ -213,7 +215,17 @@ void updateDisplay(){
       break;
 
     case 1:
-      display_multi(gpsstruct[gpsselected].encode, gpsselected, gpsstruct[gpsselected].name);
+      if(!gpsstruct[gpsselected].missing){
+        display_multi(gpsstruct[gpsselected].encode, gpsselected, gpsstruct[gpsselected].name);
+      }else{
+        //first line
+        lcd.setCursor(0, 0);
+        lcd.print(gpsstruct[gpsselected].name);
+        lcd.print(" missing       ");
+
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+      }
       break;
   }
 }
@@ -235,6 +247,7 @@ void display_oneline(TinyGPSPlus gps, short row, char name){
   //location
   lcd.setCursor(5, row);
   lcd.print(gps.location.lat());
+  lcd.print("  ");
   lcd.setCursor(10, row);
   lcd.print(" ");
   lcd.print(gps.location.lng());
