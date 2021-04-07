@@ -6,9 +6,10 @@
 
 #define BAUTRATE 9600
 #define GPS_NUMBER 2
+#define WAITFORSIGNALTIME 5000
 
 //Debug level
-#define DEBUG 2
+#define DEBUG 21
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -25,8 +26,10 @@ TinyGPSPlus gps2;
 struct GPSStruct {
     SoftwareSerial *soft;
     TinyGPSPlus encode;
-    bool isValid;
     char name;
+    unsigned long lastTimeSinceData;
+    bool missing;
+    bool lcdOnMissing;
 };
 GPSStruct gpsstruct[GPS_NUMBER];
 
@@ -49,14 +52,18 @@ void setup() {
   //GPS1
   gpsstruct[0].soft = &port1;
   gpsstruct[0].encode = gps1;
-  gpsstruct[0].isValid = false;
   gpsstruct[0].name = '1';
+  gpsstruct[0].lastTimeSinceData = millis();
+  gpsstruct[0].missing = true;
+  gpsstruct[0].lcdOnMissing = false;
 
   //GPS2
   gpsstruct[1].soft = &port2;
   gpsstruct[1].encode = gps2;
-  gpsstruct[1].isValid = false;
   gpsstruct[1].name = '2';
+  gpsstruct[1].lastTimeSinceData = millis();
+  gpsstruct[1].missing = true;
+  gpsstruct[1].lcdOnMissing = false;
 
   // LCD
   lcd.begin(16, 2);
@@ -106,8 +113,9 @@ void gpsSeclection(){
 void readSoftSerail(){
   gpsstruct[gpsselected].soft->listen();
   if(gpsstruct[gpsselected].soft->available() > 0){
-    //if new date are read in, change state to invalide
-    gpsstruct[gpsselected].isValid = false;
+    //update time
+    gpsstruct[gpsselected].missing = false;
+    gpsstruct[gpsselected].lastTimeSinceData = millis();
 
     #if DEBUG > 1
       Serial.print(gpsstruct[gpsselected].name);
@@ -134,8 +142,6 @@ void readSoftSerail(){
         Serial.println("  satellites valid");
       #endif
 
-      gpsstruct[gpsselected].isValid = true;
-
       //change Module if valid
       gpsSeclection();
     }
@@ -143,6 +149,23 @@ void readSoftSerail(){
     #if DEBUG > 1
       Serial.println();
     #endif
+  }else{
+    //if in WAITFORSIGNALTIME no signal is detected change satelitte
+    if(millis()-gpsstruct[gpsselected].lastTimeSinceData > WAITFORSIGNALTIME){
+      gpsstruct[gpsselected].missing = true;
+      gpsstruct[gpsselected].lastTimeSinceData = millis();
+
+      gpsstruct[gpsselected].soft->begin(BAUTRATE);
+
+
+      #if DEBUG > 2
+        Serial.print(gpsstruct[gpsselected].name);
+        Serial.println(":");
+        Serial.println("  missing");
+      #endif
+
+      gpsSeclection();
+    }
   }
 }
 
@@ -156,8 +179,18 @@ bool checkForUpdate(TinyGPSPlus gps){
 void updateDisplay(){
   for (short i = 0; i < GPS_NUMBER; i++){
     //check if update is needed
-    if(checkForUpdate(gpsstruct[i].encode)){
-      display_oneline(gpsstruct[i].encode, i, gpsstruct[i].name);
+    if(!gpsstruct[i].missing){
+      gpsstruct[i].lcdOnMissing = false;
+      if(checkForUpdate(gpsstruct[i].encode)){
+        display_oneline(gpsstruct[i].encode, i, gpsstruct[i].name);
+      }
+    }else{
+      if(!gpsstruct[i].lcdOnMissing){
+        gpsstruct[i].lcdOnMissing = true;
+        Serial.println("update missing");
+        lcd.setCursor(0,i);
+        lcd.print("Missing         ");
+      }
     }
   }
   lcd.setCursor(0,gpsselected);
