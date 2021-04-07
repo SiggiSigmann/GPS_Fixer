@@ -11,6 +11,8 @@
 #define MULTIMODETIME 2000
 #define MULTIDISPLAYS 4
 
+#define ANALOGPIN A0
+
 //Debug level
 #define DEBUG 0
 
@@ -41,6 +43,8 @@ int gpsselected = 0;
 int displayMode = 0;
 int multiMode = 0;
 unsigned long modeTime;
+
+int smothAnalog = 1024;
 
 //method declaration
 void modeSelection();
@@ -255,7 +259,25 @@ void display_oneline(TinyGPSPlus gps, short row, char name){
 
 //display multimode with more collums
 void display_multi(TinyGPSPlus gps, short row, char name){
-  switch(multiMode){
+  int mode = multiMode;
+
+  smothAnalog = (smothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
+
+  if(smothAnalog>900){
+    mode = multiMode;
+  }else if(smothAnalog>830){
+    mode = 0;
+  }else if(smothAnalog>680){
+    mode = 0;
+  }else if(smothAnalog>510){
+    mode = 1;
+  }else if(smothAnalog>340){
+    mode = 2;
+  }else if(smothAnalog>170){
+    mode = 3;
+  }
+
+  switch(mode){
     case 0:
       display_multi_1(gps, name);
       break;
@@ -315,7 +337,7 @@ void display_multi_2(TinyGPSPlus gps, char name){
   lcd.print(gps.date.month());
   lcd.print(":");
   lcd.print(gps.date.year());
-  lcd.print("  ");
+  lcd.print("        ");
 
   lcd.setCursor(0, 1);
   lcd.print(" Time ");
@@ -324,7 +346,7 @@ void display_multi_2(TinyGPSPlus gps, char name){
   lcd.print(gps.time.minute());
   lcd.print(":");
   lcd.print(gps.time.second());
-  lcd.print("  ");
+  lcd.print("       ");
 
 }
 
