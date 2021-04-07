@@ -5,16 +5,10 @@
 #include <Wire.h>
 
 #define BAUTRATE 9600
-#define GPS_Number 2
-#define DISPLAY_MODIE 2
-//How often to change gps module. Shoulb be double the sending duration of the module to make 
-//shure all gate could be read. (10000 => 10s)
-#define REFRESHRATE 2000
-#define MULTIDISPLAYS 4
-#define MULTIDISPLAYSREFRESHRATE 5000
+#define GPS_NUMBER 2
 
 //Debug level
-#define DEBUG 0
+#define DEBUG 2
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -31,64 +25,46 @@ TinyGPSPlus gps2;
 struct GPSStruct {
     SoftwareSerial *soft;
     TinyGPSPlus encode;
+    bool isValid;
     char name;
-    int row;
 };
-GPSStruct gpsstruct[2];
+GPSStruct gpsstruct[GPS_NUMBER];
 
-//other variables
-float GPSLat;
-float GPSLon;
-float GPSAlt;
-uint8_t GPSSats;
-uint32_t GPSHdop;
-uint32_t GPSstarttimemS;
-uint32_t GPSendtimemS;
-
-//variabel for SoftSerial change
-unsigned long time = millis();
-bool change = false;
-//variabel for display mode
-int displayMode = 0;
-int oldmode = 0;
-int multiMode = 0;
-unsigned long multichangeInterval = millis();
 // Variables for gpsseclection
 int gpsselected = 0;
 
 //method declaration
-void printGPS(TinyGPSPlus);
-void displayGPS();
-void readSoftSerail();
-void display_multi(TinyGPSPlus gps, int row, char name);
-void display_oneline(TinyGPSPlus gps, int row, char name);
 void modeSelection();
 void gpsSeclection();
-void changeGPSModule();
-void display_multi_1(TinyGPSPlus gps, char name);
-void display_multi_2(TinyGPSPlus gps, char name);
-void display_multi_3(TinyGPSPlus gps, char name);
-void display_multi_4(TinyGPSPlus gps, char name);
+
+void readSoftSerail();
+void updateDisplay();
+
+void display_oneline(TinyGPSPlus, short, char);
 
 void setup() {
+  //lower wire speed to improve lcd accurency
   Wire.setClock(10000);
+  
   //GPS1
   gpsstruct[0].soft = &port1;
   gpsstruct[0].encode = gps1;
+  gpsstruct[0].isValid = false;
   gpsstruct[0].name = '1';
-  gpsstruct[0].row = 0;
 
   //GPS2
   gpsstruct[1].soft = &port2;
   gpsstruct[1].encode = gps2;
+  gpsstruct[1].isValid = false;
   gpsstruct[1].name = '2';
-  gpsstruct[1].row = 1;
 
   // LCD
   lcd.begin(16, 2);
+  lcd.clear();
+  lcd.cursor();
 
   //Serial communication
-  #if DEBUG > 1
+  #if DEBUG > 0
     Serial.begin(BAUTRATE);
     while (!Serial) {}
 
@@ -104,241 +80,107 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(2), modeSelection, RISING);
   pinMode(3, INPUT);
   attachInterrupt(digitalPinToInterrupt(3), gpsSeclection, RISING);
-
-  displayGPS();
 }
 
 //### Loop #######################################################################
 void loop() {
-  //read gps data and update display
+  //loop is splitted into two parts: Read Data and display
   readSoftSerail();
-
-  //change only when displaymode is online mode (mode 0)
-  if(displayMode == 0){
-    if(millis()-time > REFRESHRATE){
-      time = millis();
-      gpsselected = gpsselected+1 % GPS_Number;
-    }
-  }
-
-  if(millis()-multichangeInterval > MULTIDISPLAYSREFRESHRATE){
-
-    if(displayMode == 1){
-      multiMode = (multiMode+1) % MULTIDISPLAYS;
-      multichangeInterval = millis();
-      displayGPS();
-    }
-
-  }
+  updateDisplay();
 }
 
-//### interrupt #################################################################
+/*### interrupt #################################################################
+ * For both buttons
+*/
 void modeSelection(){
-  displayMode = (displayMode+1) % DISPLAY_MODIE;
-
-  if(displayMode == 1){
-    multiMode = 0;
-    multichangeInterval = millis();
-  }
-  displayGPS();
+  //displayMode = (displayMode+1) % DISPLAY_MODIE;
 }
 
 void gpsSeclection(){
-  changeGPSModule();
+  gpsselected = (gpsselected+1) % GPS_NUMBER;
 }
 
-//### Serial ###################################################################
+/*### Serial read #################################################################
+ * encode sinal from modules
+*/
 void readSoftSerail(){
   gpsstruct[gpsselected].soft->listen();
   if(gpsstruct[gpsselected].soft->available() > 0){
+    //if new date are read in, change state to invalide
+    gpsstruct[gpsselected].isValid = false;
+
+    #if DEBUG > 1
+      Serial.print(gpsstruct[gpsselected].name);
+      Serial.println(":");
+    #endif
 
     while (gpsstruct[gpsselected].soft->available() > 0) {
       char inByte = gpsstruct[gpsselected].soft->read();
       gpsstruct[gpsselected].encode.encode(inByte);
       
-      #if DEBUG > 1
+      #if DEBUG > 10
         Serial.print(inByte);
       #endif
     }
 
-    #if DEBUG > 1
-      Serial.print("Processed: ");
+    #if DEBUG > 3
+      Serial.print("  processed Chars:");
       Serial.println(gpsstruct[gpsselected].encode.charsProcessed());
     #endif
 
-    if(gpsstruct[gpsselected].encode.charsProcessed() > 500){
-      #if DEBUG > 1
-        Serial.print(gps_struct.name + " :");
+    //check if satellites is value
+    if(gpsstruct[gpsselected].encode.satellites.isValid()){
+      #if DEBUG > 2
+        Serial.println("  satellites valid");
       #endif
 
-      //change gps module if encoding was sucessfull
-      if(gpsstruct[gpsselected].encode.satellites.isValid() && displayMode == 0){
-        changeGPSModule();
-      }
-      
+      gpsstruct[gpsselected].isValid = true;
+
+      //change Module if valid
+      gpsSeclection();
+    }
+
+    #if DEBUG > 1
+      Serial.println();
+    #endif
+  }
+}
+
+/*### display #################################################################
+ * update display
+*/
+bool checkForUpdate(TinyGPSPlus gps){
+  return (gps.location.isUpdated() || gps.satellites.isUpdated());
+}
+
+void updateDisplay(){
+  for (short i = 0; i < GPS_NUMBER; i++){
+    //check if update is needed
+    if(checkForUpdate(gpsstruct[i].encode)){
+      display_oneline(gpsstruct[i].encode, i, gpsstruct[i].name);
     }
   }
-}
-
-//change which GPS modules will be updated and displayed
-void changeGPSModule(){
-  gpsselected = (gpsselected+1) % GPS_Number;
-  time = millis();
-
-  if(displayMode == 1){
-    multiMode = 0;
-    multichangeInterval = millis();
-  }
-
-  displayGPS();
-}
-
-//### lcd ############################################################################
-void displayGPS(){
-  //update Display
-  switch (displayMode){
-    case 1:
-      lcd.noCursor();
-      display_multi(gpsstruct[gpsselected].encode, gpsstruct[gpsselected].row, gpsstruct[gpsselected].name);
-      break;
-    default:
-      lcd.cursor();
-      for(int i = 0; i < GPS_Number;i++){
-        display_oneline(gpsstruct[i].encode, gpsstruct[i].row, gpsstruct[i].name);
-      }
-
-      //set curser under gps name
-      lcd.setCursor(0, gpsstruct[gpsselected].row);
-      break;
-  }
-}
-
-//display multimode with more collums
-void display_multi(TinyGPSPlus gps, int row, char name){
-  lcd.setCursor(0, 0);
-  lcd.print("                ");
-  lcd.setCursor(0, 1);
-  lcd.print("                ");
-
-  switch(multiMode){
-    case 0:
-      display_multi_1(gps, name);
-      break;
-    case 1:
-      display_multi_2(gps, name);
-      break;
-    case 2:
-      display_multi_3(gps, name);
-      break;
-    case 3:
-      display_multi_4(gps, name);
-      break;
-  }
-}
-
-void display_multi_1(TinyGPSPlus gps, char name){
-  //first line
-  lcd.setCursor(0, 0);
-  lcd.print(name);
-
-  //location
-  lcd.print("La");
-  float lat = gps.location.lat();
-  if(lat < 10.0){
-    lcd.print(" ");
-  }
-  lcd.print(gps.location.lat(),10);
-
-  lcd.setCursor(0, 1);
-  lcd.print(" Lo");
-  float lng = gps.location.lng();
-  if(lng < 10.0){
-    lcd.print(" ");
-  }
-  lcd.print(lng,10);
-}
-
-void display_multi_2(TinyGPSPlus gps, char name){
-  //first line
-  lcd.setCursor(0, 0);
-  lcd.print(name);
-
-  lcd.print("Date ");
-  lcd.print(gps.date.day());
-  lcd.print(":");
-  lcd.print(gps.date.month());
-  lcd.print(":");
-  lcd.print(gps.date.year());
-
-  lcd.setCursor(0, 1);
-  lcd.print(" Time ");
-  lcd.print(gps.time.hour());
-  lcd.print(":");
-  lcd.print(gps.time.minute());
-  lcd.print(":");
-  lcd.print(gps.time.second());
-
-}
-
-void display_multi_3(TinyGPSPlus gps, char name){
-  //first line
-  lcd.setCursor(0, 0);
-  lcd.print(name);
-
-  lcd.print("SA ");
-  int sat = gps.satellites.value();
-  lcd.print(sat);
-  if(sat < 10){
-    lcd.print(" ");
-  }
-  lcd.print(" COR ");
-  lcd.print(gps.course.deg());
-
-  lcd.setCursor(0, 1);
-  lcd.print(" kmh ");
-  lcd.print(gps.speed.kmph());
-}
-
-void display_multi_4(TinyGPSPlus gps, char name){
-  //first line
-  lcd.setCursor(0, 0);
-  lcd.print(name);
-
-  lcd.print("Alt  ");
-  lcd.print(gps.altitude.meters());
-
-  lcd.setCursor(0,1);
-  lcd.print(" Hdop ");
-  lcd.print(gps.hdop.value());
+  lcd.setCursor(0,gpsselected);
 }
 
 //diesplay gps per line
-void display_oneline(TinyGPSPlus gps, int row, char name){
-  GPSSats = gps.satellites.value();
-
+void display_oneline(TinyGPSPlus gps, short row, char name){
   //name
   lcd.setCursor(0, row);
   lcd.print(name);
-  lcd.setCursor(1, row);
   lcd.print(":");
 
   //satellites
-  lcd.setCursor(2, row);
-  lcd.print(GPSSats);
-  if(GPSSats < 10){
+  lcd.print(gps.satellites.value());
+  if(gps.satellites.value() < 10){
     lcd.print(" ");
   }
-
-  lcd.setCursor(4, row);
   lcd.print(" ");
-
-  GPSLat = gps.location.lat();
-  GPSLon = gps.location.lng();
 
   //location
   lcd.setCursor(5, row);
-  lcd.print(GPSLat);
+  lcd.print(gps.location.lat());
   lcd.setCursor(10, row);
   lcd.print(" ");
-  lcd.print(GPSLon);
+  lcd.print(gps.location.lng());
 }
