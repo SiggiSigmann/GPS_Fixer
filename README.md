@@ -9,6 +9,3 @@ GPS2 is connected to rx = 8, tx = 9;
 
 ![Circuit image](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/circuit.png)
 Made with https://www.circuit-diagram.org
-
-# Bug
-When changeing the Modul via the Button it displays 0000.
