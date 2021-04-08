@@ -6,6 +6,7 @@ There are two display modes. One displays both Modules but only Longtitute and l
 The LCD is connected to Pins rs = 6, en = 7, d4 = 5, d5 = 4, d6 = 13, d7 = 12;
 GPS1 is connected to rx = 10, tx = 11;
 GPS2 is connected to rx = 8, tx = 9;
+Potentionmeter for mode selection is connected to A0
 
 ![Circuit image](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/circuit.png)
 Made with https://www.circuit-diagram.org
