@@ -27,6 +27,22 @@ To customice the Programm three constants can be used:
 
 3. **METRICS**: Describe in which units the value will be displayed (0 = metric, 1 = imperial)
 
+4. **GPSNUMBER**: Describe how many GPS Modules are connected. Default is 2. More is not possible with the [Arduino Uno](https://www.amazon.de/Arduino-Uno-Rev-3-Mikrocontroller-Board/dp/B008GRTSV6/ref=sr_1_3?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1O4VEK2QHUW18&dchild=1&keywords=arduino+uno&qid=1617870212&sprefix=arduino+uno%2Caps%2C201&sr=8-3) because all pins are in use. The only option would be to change the Display to I2C communication. Each GPSModule must be initialized by using the method *void initGPSStruct(SoftwareSerial* soft)*. This method needs an instance of a Softwareserial connection as shown in the following.
+
+```cpp
+//rx, tx
+SoftwareSerial port3(10, 11);
+
+void setup() {
+	...
+
+	//GPS
+  	initGPSStruct3(&port);
+
+	...
+}
+```
+
 # Hardware
 An [Arduino Uno](https://www.amazon.de/Arduino-Uno-Rev-3-Mikrocontroller-Board/dp/B008GRTSV6/ref=sr_1_3?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1O4VEK2QHUW18&dchild=1&keywords=arduino+uno&qid=1617870212&sprefix=arduino+uno%2Caps%2C201&sr=8-3) is used in combination with a [HD44780 (2 x 16) LCD Display](https://www.amazon.de/AZDelivery-HD44780-Display-Schnittstelle-Hintergrund/dp/B07CQG6CMT/ref=sr_1_1?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=HD44780+Chip&qid=1617870304&sr=8-1). To test a [BN220](https://www.amazon.de/bobotron-3-0V-5-0V-Glonass-Antenne-Eingebautes-Blau/dp/B08P75135L/ref=sr_1_1?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=BN220&qid=1617870342&sr=8-1) was used as a GPS Module. In theory, also other GPS Modules should work like [BN180](https://www.amazon.de/WIshioT-GPS-Modul-UART-TTL-Dual-Glonass-GPS-Modul-Aircraft-Controller/dp/B07FKRTQYS/ref=sr_1_2?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=BN180&qid=1617870383&sr=8-2) or [BN880](https://www.amazon.de/Shumo-BN-880Q-GPS-Modul-QMC5883L-PIXHAWK-Silber-Blau/dp/B07Z5KZW62/ref=sr_1_5?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&dchild=1&keywords=gps+bn&qid=1617870392&sr=8-5) (not tested). Also, some capacitors for debouncing and resistors aside some potentiometers are needed.
 

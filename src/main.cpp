@@ -7,7 +7,7 @@
 #define BAUDRATE 9600
 
 //gps
-#define GPS_NUMBER 2
+#define GPSNUMBER 2
 #define WAITFORSIGNALTIME 5000
 
 //units
@@ -34,10 +34,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 //software and gps instances
 //rx, tx
 SoftwareSerial port0(10, 11);
-TinyGPSPlus gps0;
-
 SoftwareSerial port1(8, 9);
-TinyGPSPlus gps1;
 
 //struct to manage gps module
 struct GPSStruct {
@@ -47,10 +44,11 @@ struct GPSStruct {
     bool missing;                     //stores  if missing
     bool lcdOnMissing;                //stores if missing is displayed (stor this information to prefent refres scylus of the lcd)
 };
-GPSStruct gpsstruct[GPS_NUMBER];
+GPSStruct gpsstruct[GPSNUMBER];
 
 // Variables for gpsseclection
 int gpsselected = 0;
+short initGPSIndex = 0;
 
 //display variables
 int displayMode = 0;
@@ -59,7 +57,7 @@ unsigned long modeTime;
 int smoothAnalog = 1024;
 
 //setup struct
-void initGPSStruct(short, TinyGPSPlus, SoftwareSerial*);
+void initGPSStruct(SoftwareSerial*);
 
 //method declaration
 void modeSelection();
@@ -104,8 +102,8 @@ void setup() {
   Wire.setClock(10000);
   
   //GPS
-  initGPSStruct(0, gps0, &port0);
-  initGPSStruct(1, gps1, &port1);
+  initGPSStruct(&port0);
+  initGPSStruct(&port1);
 
   // LCD
   lcd.begin(16, 2);
@@ -121,10 +119,6 @@ void setup() {
     Serial.println("setup");
   #endif
 
-  //software serial
-  port1.begin(BAUDRATE);
-  port2.begin(BAUDRATE);
-
   //pins interrupt
   pinMode(2, INPUT);
   attachInterrupt(digitalPinToInterrupt(2), modeSelection, RISING);
@@ -135,12 +129,18 @@ void setup() {
   modeTime = millis();
 }
 
-initGPSStruct(short index, TinyGPSPlus gps, SoftwareSerial* soft){
-  gpsstruct[index].soft = soft;
-  gpsstruct[index].encode = gps;
-  gpsstruct[index].lastTimeSinceData = millis();
-  gpsstruct[index].missing = true;
-  gpsstruct[index].lcdOnMissing = false;
+//init struct
+void initGPSStruct(SoftwareSerial* soft){
+  //initialice gpsModule
+  gpsstruct[initGPSIndex].soft = soft;
+  gpsstruct[initGPSIndex].soft->begin(BAUDRATE);
+  gpsstruct[initGPSIndex].encode = TinyGPSPlus();
+  gpsstruct[initGPSIndex].lastTimeSinceData = millis();
+  gpsstruct[initGPSIndex].missing = true;
+  gpsstruct[initGPSIndex].lcdOnMissing = false;
+
+  //update index
+  initGPSIndex++;
 }
 
 //### Loop #######################################################################
@@ -165,7 +165,7 @@ void modeSelection(){
 
 void gpsSeclection(){
   //change selected gps module
-  gpsselected = (gpsselected+1) % GPS_NUMBER;
+  gpsselected = (gpsselected+1) % GPSNUMBER;
 }
 
 /*### Serial read #################################################################
@@ -244,7 +244,7 @@ void updateDisplay(){
   switch(displayMode){
     case 0:
       //oneline mode
-      for (short i = 0; i < GPS_NUMBER; i++){
+      for (short i = 0; i < GPSNUMBER; i++){
         //check if update is needed
         if(!gpsstruct[i].missing){
           gpsstruct[i].lcdOnMissing = false;
@@ -447,7 +447,7 @@ void display_multi_3(TinyGPSPlus gps, short name){
       lcd.print(" ");
     }
     lcd.print(gps.speed.kmph(),2);
-  #else if METRICS ==1
+  #elif METRICS ==1
     lcd.print(" mph ");
     if(gps.speed.mph() < 100){
       lcd.print(" ");
@@ -479,7 +479,7 @@ void display_multi_4(TinyGPSPlus gps, short name){
     }
     lcd.print(gps.altitude.meters(), 1);
     lcd.print("m    ");
-  #else if METRICS == 1
+  #elif METRICS == 1
     if(gps.altitude.feet() < 1000){
       lcd.print(" ");
     }
