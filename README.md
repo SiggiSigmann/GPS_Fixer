@@ -7,11 +7,11 @@ The GPS Data can be displayed in two modes. The first mode "One_line mode" shows
 
 The "Mulit_line Mode" only shows information from one Module. It switches between 4 different information pages. So it can display the information with much higher permission. By using the Potentiometer( connected to A0 ) the user can choose between the 4 different pages or a cycle mode. In the cycle mode, a new age will be displayed every 2 seconds.
 First frame for GPS Module 2:
-![Multi_line Mode Frame 1 for GPS 2](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_2_1png)
+![Multi_line Mode Frame 1 for GPS 2](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_2_1.png)
 Frame 2,3,4 for GPS Module 1:
-![Multi_line Mode Frame 2 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_2png)
-![Multi_line Mode Frame 3 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_3png)
-![Multi_line Mode Frame 4 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_4png)
+![Multi_line Mode Frame 2 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_2.png)
+![Multi_line Mode Frame 3 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_3.png)
+![Multi_line Mode Frame 4 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_4.png)
 
 To switch between the display mode a button connected to Pin 2 can be used. A second button connected to Pin 3 can be used to change the GPS module displayed or updated. In "One_line mode" the module which is currently read is underlined.
 
