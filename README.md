@@ -1,7 +1,17 @@
 # GPS_Fixer
 The GPS_Fixer displays the received Data from up to two GPS Modules. This comes in handy if you want to have a fast GPS worm up before using the module. Connect the module to the Arduino and wait for a GPS fix. So you can put your GPS Moudluse outside without the need to use your Drone or other devices. This means you don't have to worry or supervise your device.
 
-The GPS Data can be displayed in two modes. The first mode "One_line mode" shows both the GPS Module, the number of Satellites it found, and the first digits of the longitude and the latitude. The "Mulit_line Mode" only shows information from one Module. It switches between 4 different information pages. So it can display the information with much higher permission. By using the Potentiometer( connected to A0 ) the user can choose between the 4 different pages or a cycle mode. In the cycle mode, a new age will be displayed every 2 seconds.
+The GPS Data can be displayed in two modes. The first mode "One_line mode" shows both the GPS Module, the number of Satellites it found, and the first digits of the longitude and the latitude. E.g:
+![One_Line Mode](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/O.png)
+
+
+The "Mulit_line Mode" only shows information from one Module. It switches between 4 different information pages. So it can display the information with much higher permission. By using the Potentiometer( connected to A0 ) the user can choose between the 4 different pages or a cycle mode. In the cycle mode, a new age will be displayed every 2 seconds.
+First frame for GPS Module 2:
+![Multi_line Mode Frame 1 for GPS 2](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_2_1png)
+Frame 2,3,4 for GPS Module 1:
+![Multi_line Mode Frame 2 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_2png)
+![Multi_line Mode Frame 3 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_3png)
+![Multi_line Mode Frame 4 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_4png)
 
 To switch between the display mode a button connected to Pin 2 can be used. A second button connected to Pin 3 can be used to change the GPS module displayed or updated. In "One_line mode" the module which is currently read is underlined.
 
