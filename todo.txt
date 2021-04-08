@@ -1,4 +1,0 @@
-create branch for simpel and andvanced as well as for one and two modules
-create images of my build
-description of how to use it
-cutom readme for each branch
