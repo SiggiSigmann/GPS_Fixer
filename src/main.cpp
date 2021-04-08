@@ -33,11 +33,11 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 //software and gps instances
 //rx, tx
-SoftwareSerial port1(10, 11);
-TinyGPSPlus gps1;
+SoftwareSerial port0(10, 11);
+TinyGPSPlus gps0;
 
-SoftwareSerial port2(8, 9);
-TinyGPSPlus gps2;
+SoftwareSerial port1(8, 9);
+TinyGPSPlus gps1;
 
 //struct to manage gps module
 struct GPSStruct {
@@ -57,6 +57,9 @@ int displayMode = 0;
 int multiMode = 0;
 unsigned long modeTime;
 int smoothAnalog = 1024;
+
+//setup struct
+void initGPSStruct(short, TinyGPSPlus, SoftwareSerial*);
 
 //method declaration
 void modeSelection();
@@ -100,19 +103,9 @@ void setup() {
   //lower wire speed to improve lcd accurency
   Wire.setClock(10000);
   
-  //GPS1
-  gpsstruct[0].soft = &port1;
-  gpsstruct[0].encode = gps1;
-  gpsstruct[0].lastTimeSinceData = millis();
-  gpsstruct[0].missing = true;
-  gpsstruct[0].lcdOnMissing = false;
-
-  //GPS2
-  gpsstruct[1].soft = &port2;
-  gpsstruct[1].encode = gps2;
-  gpsstruct[1].lastTimeSinceData = millis();
-  gpsstruct[1].missing = true;
-  gpsstruct[1].lcdOnMissing = false;
+  //GPS
+  initGPSStruct(0, gps0, &port0);
+  initGPSStruct(1, gps1, &port1);
 
   // LCD
   lcd.begin(16, 2);
@@ -140,6 +133,14 @@ void setup() {
 
   //set mode timer
   modeTime = millis();
+}
+
+initGPSStruct(short index, TinyGPSPlus gps, SoftwareSerial* soft){
+  gpsstruct[index].soft = soft;
+  gpsstruct[index].encode = gps;
+  gpsstruct[index].lastTimeSinceData = millis();
+  gpsstruct[index].missing = true;
+  gpsstruct[index].lcdOnMissing = false;
 }
 
 //### Loop #######################################################################
