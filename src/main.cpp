@@ -4,15 +4,19 @@
 #include <LiquidCrystal.h>
 #include <Wire.h>
 
-#define BAUTRATE 9600
+#define BAUDRATE 9600
 
 //gps
 #define GPS_NUMBER 2
 #define WAITFORSIGNALTIME 5000
 
+//units
+// 0 = metric
+// 1 = imperial
+#define METRICS 0
 
 //display
-#define DISPLAY_MODIE 2
+#define DISPLAYMODE 2
 #define MULTIMODETIME 2000
 #define MULTIDISPLAYS 4
 
@@ -52,7 +56,7 @@ int gpsselected = 0;
 int displayMode = 0;
 int multiMode = 0;
 unsigned long modeTime;
-int smothAnalog = 1024;
+int smoothAnalog = 1024;
 
 //method declaration
 void modeSelection();
@@ -118,15 +122,15 @@ void setup() {
 
   //Serial communication
   #if DEBUG > 0
-    Serial.begin(BAUTRATE);
+    Serial.begin(BAUDRATE);
     while (!Serial) {}
 
     Serial.println("setup");
   #endif
 
   //software serial
-  port1.begin(BAUTRATE);
-  port2.begin(BAUTRATE);
+  port1.begin(BAUDRATE);
+  port2.begin(BAUDRATE);
 
   //pins interrupt
   pinMode(2, INPUT);
@@ -150,7 +154,7 @@ void loop() {
 */
 void modeSelection(){
   //change display mode
-  displayMode = (displayMode+1) % DISPLAY_MODIE;
+  displayMode = (displayMode+1) % DISPLAYMODE;
   multiMode = 0;
 
   //remove lcdOnMissing so lcd could be updated
@@ -164,7 +168,7 @@ void gpsSeclection(){
 }
 
 /*### Serial read #################################################################
- * encode sinal from modules
+ * encode signal from modules
 */
 void readSoftSerail(){
   gpsstruct[gpsselected].soft->listen();
@@ -210,13 +214,13 @@ void readSoftSerail(){
       Serial.println();
     #endif
   }else{
-    //if in WAITFORSIGNALTIME no signal is detected change satelitte
+    //if in WAITFORSIGNALTIME no signal is detected change gps Module
     if(millis()-gpsstruct[gpsselected].lastTimeSinceData > WAITFORSIGNALTIME){
       gpsstruct[gpsselected].missing = true;
       gpsstruct[gpsselected].lastTimeSinceData = millis();
 
       //restart software serial
-      gpsstruct[gpsselected].soft->begin(BAUTRATE);
+      gpsstruct[gpsselected].soft->begin(BAUDRATE);
 
       #if DEBUG > 2
         Serial.print(gpsstruct[gpsselected].name);
@@ -244,7 +248,7 @@ void updateDisplay(){
         if(!gpsstruct[i].missing){
           gpsstruct[i].lcdOnMissing = false;
 
-          //cehck if update is needed
+          //check if update is needed
           if(gpsstruct[i].encode.location.isUpdated() || gpsstruct[i].encode.satellites.isUpdated()){
             display_oneline(gpsstruct[i].encode, i);
           }
@@ -305,23 +309,23 @@ void display_oneline(TinyGPSPlus gps, short row){
   lcd.print(" ");
 }
 
-//display multimode with more collums
+//display multimode with more columns
 void display_multi(TinyGPSPlus gps, short row){
   int mode = multiMode;
 
   //check analog value and dislay corresponding display
-  smothAnalog = (smothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
-  if(smothAnalog>900){
+  smoothAnalog = (smoothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
+  if(smoothAnalog>900){
     mode = multiMode;
-  }else if(smothAnalog>830){
+  }else if(smoothAnalog>830){
     mode = 0;
-  }else if(smothAnalog>680){
+  }else if(smoothAnalog>680){
     mode = 0;
-  }else if(smothAnalog>510){
+  }else if(smoothAnalog>510){
     mode = 1;
-  }else if(smothAnalog>340){
+  }else if(smoothAnalog>340){
     mode = 2;
-  }else if(smothAnalog>170){
+  }else if(smoothAnalog>170){
     mode = 3;
   }
 
@@ -416,7 +420,7 @@ void display_multi_3(TinyGPSPlus gps, short name){
   lcd.setCursor(0, 0);
   lcd.print(name);
 
-  //sattelites
+  //satellites
   lcd.print("SA ");
   int sat = gps.satellites.value();
   lcd.print(sat);
@@ -433,14 +437,25 @@ void display_multi_3(TinyGPSPlus gps, short name){
 
   //speed
   lcd.setCursor(0, 1);
-  lcd.print(" kmh ");
-  if(gps.speed.kmph() < 100){
-    lcd.print(" ");
-  }
-  if(gps.speed.kmph() < 10){
-    lcd.print(" ");
-  }
-  lcd.print(gps.speed.kmph(),2);
+  #if METRICS == 0
+    lcd.print(" kmh ");
+    if(gps.speed.kmph() < 100){
+      lcd.print(" ");
+    }
+    if(gps.speed.kmph() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.speed.kmph(),2);
+  #else if METRICS ==1
+    lcd.print(" mph ");
+    if(gps.speed.mph() < 100){
+      lcd.print(" ");
+    }
+    if(gps.speed.mph() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.speed.mph(),2);
+  #endif
   lcd.print("     ");
 }
 
@@ -449,19 +464,33 @@ void display_multi_4(TinyGPSPlus gps, short name){
   lcd.setCursor(0, 0);
   lcd.print(name);
 
-  //altitute
+  //altitude
   lcd.print("Alt ");
-  if(gps.altitude.meters() < 1000){
-    lcd.print(" ");
-  }
-  if(gps.altitude.meters() < 100){
-    lcd.print(" ");
-  }
-  if(gps.altitude.meters() < 10){
-    lcd.print(" ");
-  }
-  lcd.print(gps.altitude.meters(), 1);
-  lcd.print("     ");
+  #if METRICS == 0
+    if(gps.altitude.meters() < 1000){
+      lcd.print(" ");
+    }
+    if(gps.altitude.meters() < 100){
+      lcd.print(" ");
+    }
+    if(gps.altitude.meters() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.altitude.meters(), 1);
+    lcd.print("m    ");
+  #else if METRICS == 1
+    if(gps.altitude.feet() < 1000){
+      lcd.print(" ");
+    }
+    if(gps.altitude.feet() < 100){
+      lcd.print(" ");
+    }
+    if(gps.altitude.feet() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.altitude.feet(), 1);
+    lcd.print("feet ");
+  #endif
 
   //hdop
   lcd.setCursor(0,1);
