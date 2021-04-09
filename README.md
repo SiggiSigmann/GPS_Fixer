@@ -1,7 +1,7 @@
 # GPS_Fixer
 The GPS_Fixer displays the received Data from up to two GPS Modules. This comes in handy if you want to have a fast GPS worm up before using the module. Connect the module to the Arduino and wait for a GPS fix. So you can put your GPS Moudluse outside without the need to use your Drone or other devices. This means you don't have to worry or supervise your device.
 
-The GPS Data can be displayed in two modes. The first mode "One_line mode" shows both the GPS Module, the number of Satellites it found, and the first digits of the longitude and the latitude. E.g:
+The GPS Data can be displayed in two modes. The first mode "One_line mode" shows both the GPS Module, the number of Satellites it found, and the first digits of the latitude and the longitude. E.g:
 
 ![One_Line Mode](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/O.png)
 
@@ -16,6 +16,10 @@ Frame 2,3,4 for GPS Module 1:
 ![Multi_line Mode Frame 2 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_2.png)
 ![Multi_line Mode Frame 3 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_3.png)
 ![Multi_line Mode Frame 4 for GPS 1](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/M_1_4.png)
+
+Invalid data is display as "--". This will change to the actual data if they become valid:
+
+![Invalide](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/invalide.png)
 
 To switch between the display mode a button connected to Pin 2 can be used. A second button connected to Pin 3 can be used to change the GPS module displayed or updated. In "One_line mode" the module which is currently read is underlined.
 
