@@ -20,6 +20,9 @@
 #define MULTIMODETIME 2000
 #define MULTIDISPLAYS 4
 
+//defines timeshift from
+#define TIMEOFFSET 2
+
 //Analog Pin
 #define ANALOGPIN A0
 
@@ -353,6 +356,7 @@ void display_multi(TinyGPSPlus gps, short row){
   }
 }
 
+//location display
 void display_multi_1(TinyGPSPlus gps, short name){
   //first line
   lcd.setCursor(0, 0);
@@ -375,41 +379,47 @@ void display_multi_1(TinyGPSPlus gps, short name){
   lcd.print(lng,10);
 }
 
+//time and date display
 void display_multi_2(TinyGPSPlus gps, short name){
+  //calc offsets
+  short hour = gps.time.hour() + TIMEOFFSET;
+  short dayoffset = hour/24;
+  if(dayoffset) hour-=24;
+
   //first line
   lcd.setCursor(0, 0);
   lcd.print(name);
 
   //date
   lcd.print("Date ");
-  if(gps.date.day() < 10){
+  if(gps.date.day()+dayoffset < 10){
     lcd.print(" ");
   }
-  lcd.print(gps.date.day());
-  lcd.print(":");
+  lcd.print(gps.date.day()+dayoffset);
+  lcd.print(".");
   if(gps.date.month() < 10){
-    lcd.print(" ");
+    lcd.print("0");
   }
   lcd.print(gps.date.month());
-  lcd.print(":");
+  lcd.print(".");
   lcd.print(gps.date.year());
   lcd.print("        ");
 
   //time
   lcd.setCursor(0, 1);
   lcd.print(" Time ");
-  if(gps.time.hour() < 10){
+  if(hour < 10){
     lcd.print(" ");
   }
-  lcd.print(gps.time.hour());
+  lcd.print(hour);
   lcd.print(":");
   if(gps.time.minute() < 10){
-    lcd.print(" ");
+    lcd.print("0");
   }
   lcd.print(gps.time.minute());
   lcd.print(":");
   if(gps.time.second() < 10){
-    lcd.print(" ");
+    lcd.print("0");
   }
   lcd.print(gps.time.second());
   lcd.print("  ");
