@@ -21,7 +21,9 @@
 #define MULTIDISPLAYS 4
 
 //defines timeshift from
-#define TIMEOFFSET 2
+#define TIMEOFFSET 1
+//0 = Wintertime(no offset), 1=Summertime(1 hour ofsset additional)
+#define SUMMERTIME 1
 
 //Analog Pin
 #define ANALOGPIN A0
@@ -382,7 +384,7 @@ void display_multi_1(TinyGPSPlus gps, short name){
 //time and date display
 void display_multi_2(TinyGPSPlus gps, short name){
   //calc offsets
-  short hour = gps.time.hour() + TIMEOFFSET;
+  short hour = gps.time.hour() + TIMEOFFSET + SUMMERTIME;
   short dayoffset = hour/24;
   if(dayoffset) hour-=24;
 
