@@ -299,19 +299,32 @@ void display_oneline(TinyGPSPlus gps, short row){
   lcd.print(":");
 
   //satellites
-  lcd.print(gps.satellites.value());
-  if(gps.satellites.value() < 10){
-    lcd.print(" ");
+  if(gps.satellites.isValid()){
+    lcd.print(gps.satellites.value());
+    if(gps.satellites.value() < 10){
+      lcd.print(" ");
+    }
+  }else{
+    lcd.print("--");
   }
   lcd.print(" ");
 
   //location
-  lcd.setCursor(5, row);
-  lcd.print(gps.location.lat(),2);
-  lcd.print("  ");
-  lcd.setCursor(10, row);
-  lcd.print(" ");
-  lcd.print(gps.location.lng(),2);
+  if(gps.location.isValid()){
+    lcd.setCursor(5, row);
+    lcd.print(gps.location.lat(),2);
+    lcd.print("  ");
+    lcd.setCursor(10, row);
+    lcd.print(" ");
+    lcd.print(gps.location.lng(),2);
+  }else{
+    lcd.setCursor(5, row);
+    lcd.print("--.--");
+    lcd.print("  ");
+    lcd.setCursor(10, row);
+    lcd.print(" ");
+    lcd.print("--.--");
+  }
   lcd.print(" ");
 }
 
@@ -364,29 +377,39 @@ void display_multi_1(TinyGPSPlus gps, short name){
   lcd.setCursor(0, 0);
   lcd.print(name);
 
-  //location
-  lcd.print("La");
-  float lat = gps.location.lat();
-  if(lat < 10.0){
-    lcd.print(" ");
-  }
-  lcd.print(gps.location.lat(),10);
+  if( gps.location.isValid()){
+    //location
+    lcd.print("La");
+    float lat = gps.location.lat();
+    if(lat < 10.0){
+      lcd.print(" ");
+    }
+    lcd.print(gps.location.lat(),10);
 
-  lcd.setCursor(0, 1);
-  lcd.print(" Lo");
-  float lng = gps.location.lng();
-  if(lng < 10.0){
-    lcd.print(" ");
+    lcd.setCursor(0, 1);
+    lcd.print(" Lo");
+    float lng = gps.location.lng();
+    if(lng < 10.0){
+      lcd.print(" ");
+    }
+    lcd.print(lng,10);
+  }else{
+    lcd.print("La--.----------");
+    lcd.setCursor(0, 1);
+    lcd.print(" Lo--.----------");
   }
-  lcd.print(lng,10);
 }
 
 //time and date display
 void display_multi_2(TinyGPSPlus gps, short name){
+  short hour, dayoffset = 0;
+
   //calc offsets
-  short hour = gps.time.hour() + TIMEOFFSET + SUMMERTIME;
-  short dayoffset = hour/24;
-  if(dayoffset) hour-=24;
+  if(gps.time.isValid()){
+    hour = gps.time.hour() + TIMEOFFSET + SUMMERTIME;
+    dayoffset = hour/24;
+    if(dayoffset) hour-=24;
+  }
 
   //first line
   lcd.setCursor(0, 0);
@@ -394,40 +417,48 @@ void display_multi_2(TinyGPSPlus gps, short name){
 
   //date
   lcd.print("Date ");
-  if(gps.date.day()+dayoffset < 10){
-    lcd.print(" ");
+  if(gps.date.isValid()){
+    if(gps.date.day()+dayoffset < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.date.day()+dayoffset);
+    lcd.print(".");
+    if(gps.date.month() < 10){
+      lcd.print("0");
+    }
+    lcd.print(gps.date.month());
+    lcd.print(".");
+    lcd.print(gps.date.year());
+    lcd.print("        ");
+  }else{
+    lcd.print("--.--.----");
   }
-  lcd.print(gps.date.day()+dayoffset);
-  lcd.print(".");
-  if(gps.date.month() < 10){
-    lcd.print("0");
-  }
-  lcd.print(gps.date.month());
-  lcd.print(".");
-  lcd.print(gps.date.year());
-  lcd.print("        ");
 
   //time
   lcd.setCursor(0, 1);
   lcd.print(" Time ");
-  if(hour < 10){
-    lcd.print(" ");
+  if(gps.time.isValid()){
+    if(hour < 10){
+      lcd.print(" ");
+    }
+    lcd.print(hour);
+    lcd.print(":");
+    if(gps.time.minute() < 10){
+      lcd.print("0");
+    }
+    lcd.print(gps.time.minute());
+    lcd.print(":");
+    if(gps.time.second() < 10){
+      lcd.print("0");
+    }
+    lcd.print(gps.time.second());
+    lcd.print("  ");
+  }else{
+    lcd.print("--:--:--  ");
   }
-  lcd.print(hour);
-  lcd.print(":");
-  if(gps.time.minute() < 10){
-    lcd.print("0");
-  }
-  lcd.print(gps.time.minute());
-  lcd.print(":");
-  if(gps.time.second() < 10){
-    lcd.print("0");
-  }
-  lcd.print(gps.time.second());
-  lcd.print("  ");
-
 }
 
+//satellites, cor, speed
 void display_multi_3(TinyGPSPlus gps, short name){
   //first line
   lcd.setCursor(0, 0);
@@ -435,40 +466,52 @@ void display_multi_3(TinyGPSPlus gps, short name){
 
   //satellites
   lcd.print("SA ");
-  int sat = gps.satellites.value();
-  lcd.print(sat);
-  if(sat < 10){
-    lcd.print(" ");
+  if(gps.satellites.isValid()){
+    lcd.print(gps.satellites.value());
+    if(gps.satellites.value() < 10){
+      lcd.print(" ");
+    }
+  }else{
+    lcd.print("--");
   }
 
   //course degree
   lcd.print(" COR ");
-  if(gps.course.deg() < 10){
-    lcd.print(" ");
+    if(gps.course.isValid()){
+    if(gps.course.deg() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.course.deg(), 2);
+    lcd.print("   ");
+  }else{
+    lcd.print("------");
   }
-  lcd.print(gps.course.deg(), 2);
 
   //speed
   lcd.setCursor(0, 1);
-  #if METRICS == 0
-    lcd.print(" kmh ");
-    if(gps.speed.kmph() < 100){
-      lcd.print(" ");
-    }
-    if(gps.speed.kmph() < 10){
-      lcd.print(" ");
-    }
-    lcd.print(gps.speed.kmph(),2);
-  #elif METRICS ==1
-    lcd.print(" mph ");
-    if(gps.speed.mph() < 100){
-      lcd.print(" ");
-    }
-    if(gps.speed.mph() < 10){
-      lcd.print(" ");
-    }
-    lcd.print(gps.speed.mph(),2);
-  #endif
+  if(gps.speed.isValid()){
+    #if METRICS == 0
+      lcd.print(" kmh ");
+      if(gps.speed.kmph() < 100){
+        lcd.print(" ");
+      }
+      if(gps.speed.kmph() < 10){
+        lcd.print(" ");
+      }
+      lcd.print(gps.speed.kmph(),2);
+    #elif METRICS ==1
+      lcd.print(" mph ");
+      if(gps.speed.mph() < 100){
+        lcd.print(" ");
+      }
+      if(gps.speed.mph() < 10){
+        lcd.print(" ");
+      }
+      lcd.print(gps.speed.mph(),2);
+    #endif
+  }else{
+    lcd.print("---.--");
+  }
   lcd.print("     ");
 }
 
@@ -479,41 +522,54 @@ void display_multi_4(TinyGPSPlus gps, short name){
 
   //altitude
   lcd.print("Alt ");
-  #if METRICS == 0
-    if(gps.altitude.meters() < 1000){
-      lcd.print(" ");
-    }
-    if(gps.altitude.meters() < 100){
-      lcd.print(" ");
-    }
-    if(gps.altitude.meters() < 10){
-      lcd.print(" ");
-    }
-    lcd.print(gps.altitude.meters(), 1);
-    lcd.print("m    ");
-  #elif METRICS == 1
-    if(gps.altitude.feet() < 1000){
-      lcd.print(" ");
-    }
-    if(gps.altitude.feet() < 100){
-      lcd.print(" ");
-    }
-    if(gps.altitude.feet() < 10){
-      lcd.print(" ");
-    }
-    lcd.print(gps.altitude.feet(), 1);
-    lcd.print("feet ");
-  #endif
+  if(gps.altitude.isValid()){
+    #if METRICS == 0
+      if(gps.altitude.meters() < 1000){
+        lcd.print(" ");
+      }
+      if(gps.altitude.meters() < 100){
+        lcd.print(" ");
+      }
+      if(gps.altitude.meters() < 10){
+        lcd.print(" ");
+      }
+      lcd.print(gps.altitude.meters(), 1);
+      lcd.print("m    ");
+    #elif METRICS == 1
+      if(gps.altitude.feet() < 1000){
+        lcd.print(" ");
+      }
+      if(gps.altitude.feet() < 100){
+        lcd.print(" ");
+      }
+      if(gps.altitude.feet() < 10){
+        lcd.print(" ");
+      }
+      lcd.print(gps.altitude.feet(), 1);
+      lcd.print("feet ");
+    #endif
+  }else{
+    lcd.print("----.-");
+    #if METRICS == 0
+      lcd.print("m    ");
+    #elif METRICS == 1
+      lcd.print("feet ");
+    #endif
+  }
 
   //hdop
   lcd.setCursor(0,1);
   lcd.print(" Hdop ");
-  if(gps.hdop.value() < 100){
-    lcd.print(" ");
+  if(gps.hdop.isValid()){
+    if(gps.hdop.value() < 100){
+      lcd.print(" ");
+    }
+    if(gps.hdop.value() < 10){
+      lcd.print(" ");
+    }
+    lcd.print(gps.hdop.value());
+  }else{
+    lcd.print("----");
   }
-  if(gps.hdop.value() < 10){
-    lcd.print(" ");
-  }
-  lcd.print(gps.hdop.value());
   lcd.print("       ");
 }
