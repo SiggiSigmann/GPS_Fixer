@@ -162,6 +162,7 @@ void modeSelection(){
   //change display mode
   displayMode = (displayMode+1) % DISPLAYMODE;
   multiMode = 0;
+  modeTime = millis();
 
   //remove lcdOnMissing so lcd could be updated
   gpsstruct[0].lcdOnMissing = false;
@@ -171,6 +172,8 @@ void modeSelection(){
 void gpsSeclection(){
   //change selected gps module
   gpsselected = (gpsselected+1) % GPSNUMBER;
+  multiMode = 0;
+  modeTime = millis();
 }
 
 /*### Serial read #################################################################
@@ -336,8 +339,16 @@ void display_multi(TinyGPSPlus gps, short row){
   smoothAnalog = (smoothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
   if(smoothAnalog>820){
     mode = multiMode;
+
+    //change display after MULTIMODETIME
+    if(millis()-modeTime >MULTIMODETIME){
+      modeTime = millis();
+      multiMode = (multiMode+1) % MULTIDISPLAYS;
+    }
   }else if(smoothAnalog>615){
     mode = 0;
+    multiMode = 0;
+    modeTime = millis();
   }else if(smoothAnalog>412){
     mode = 1;
   }else if(smoothAnalog>205){
@@ -360,12 +371,6 @@ void display_multi(TinyGPSPlus gps, short row){
     case 3:
       display_multi_4(gps, row+1);
       break;
-  }
-
-  //change display after MULTIMODETIME
-  if(millis()-modeTime >MULTIMODETIME){
-    modeTime = millis();
-    multiMode = (multiMode+1) % MULTIDISPLAYS;
   }
 }
 
