@@ -334,17 +334,15 @@ void display_multi(TinyGPSPlus gps, short row){
 
   //check analog value and dislay corresponding display
   smoothAnalog = (smoothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
-  if(smoothAnalog>900){
+  if(smoothAnalog>820){
     mode = multiMode;
-  }else if(smoothAnalog>830){
+  }else if(smoothAnalog>615){
     mode = 0;
-  }else if(smoothAnalog>680){
-    mode = 0;
-  }else if(smoothAnalog>510){
+  }else if(smoothAnalog>412){
     mode = 1;
-  }else if(smoothAnalog>340){
+  }else if(smoothAnalog>205){
     mode = 2;
-  }else if(smoothAnalog>170){
+  }else {
     mode = 3;
   }
 
