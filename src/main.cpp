@@ -489,9 +489,9 @@ String formattetTime(unsigned long seconds){
   short sec = secondstemp / 1000;
   secondstemp = secondstemp % 1000;
   if(sec<10){
-    formattet += "0" + String(sec) + ":";
+    formattet += "0" + String(sec) + ".";
   }else{
-    formattet += String(sec) + ":";
+    formattet += String(sec) + ".";
   }
 
   if(secondstemp<10){
