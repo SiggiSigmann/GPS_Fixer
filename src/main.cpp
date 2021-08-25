@@ -328,15 +328,23 @@ void readSoftSerail(){
  * calc times for sateiltes
 */
 void calcTime(){
-  int sats = gpsstruct[gpsselected].encode.satellites.value();
-  if(sats >= SATNUMBER1 && gpsTime[gpsselected].time1 == 0){
-    gpsTime[gpsselected].time1 = millis() - gpsTime[gpsselected].start;
-  }else if(sats >= SATNUMBER2 && gpsTime[gpsselected].time2 == 0){
-    gpsTime[gpsselected].time2 = millis() - gpsTime[gpsselected].start;
-  }else if(sats >= SATNUMBER3 && gpsTime[gpsselected].time3 == 0){
-    gpsTime[gpsselected].time3 = millis() - gpsTime[gpsselected].start;
-  }else if(sats >= SATNUMBER4 && gpsTime[gpsselected].time4 == 0){
-    gpsTime[gpsselected].time4 = millis() - gpsTime[gpsselected].start;
+  if(gpsstruct[gpsselected].missing){
+    gpsTime[gpsselected].start = 0;
+    gpsTime[gpsselected].time1 = 0;
+    gpsTime[gpsselected].time2 = 0;
+    gpsTime[gpsselected].time3 = 0;
+    gpsTime[gpsselected].time4 = 0;
+  }else{
+    int sats = gpsstruct[gpsselected].encode.satellites.value();
+    if(sats >= SATNUMBER1 && gpsTime[gpsselected].time1 == 0){
+      gpsTime[gpsselected].time1 = millis() - gpsTime[gpsselected].start;
+    }else if(sats >= SATNUMBER2 && gpsTime[gpsselected].time2 == 0){
+      gpsTime[gpsselected].time2 = millis() - gpsTime[gpsselected].start;
+    }else if(sats >= SATNUMBER3 && gpsTime[gpsselected].time3 == 0){
+      gpsTime[gpsselected].time3 = millis() - gpsTime[gpsselected].start;
+    }else if(sats >= SATNUMBER4 && gpsTime[gpsselected].time4 == 0){
+      gpsTime[gpsselected].time4 = millis() - gpsTime[gpsselected].start;
+    }
   }
 }
 
