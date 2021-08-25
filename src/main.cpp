@@ -3,6 +3,7 @@
 #include <TinyGPS++.h>
 #include <LiquidCrystal.h>
 #include <Wire.h>
+#include <EEPROM.h>
 
 #define BAUDRATE 9600
 
@@ -82,6 +83,10 @@ short timeoffset = 1;
 short summertime = 1;
 bool changeSettings = false;
 
+//adresses
+int addressTimeOffset = 0;
+int addressSummerTime = addressTimeOffset+ sizeof(timeoffset);
+
 //setup struct
 void initGPSStruct(SoftwareSerial*);
 
@@ -141,6 +146,10 @@ byte underlinedOne[] = {
 };
 
 void setup() {
+  //eeprom
+  EEPROM.get(addressTimeOffset, timeoffset);
+  EEPROM.get(addressSummerTime, summertime);
+
   //lower wire speed to improve lcd accurency
   Wire.setClock(10000);
   
@@ -199,6 +208,9 @@ void loop() {
       changedSettings = true;
       if(showSettings){
         display_settings_init();
+      }else{
+        EEPROM.put(addressTimeOffset, timeoffset);
+        EEPROM.put(addressSummerTime, summertime);
       }
     }
   }
