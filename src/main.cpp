@@ -10,6 +10,7 @@
 //gps
 #define GPSNUMBER 2
 #define WAITFORSIGNALTIME 5000
+#define TIMESOFVALIDEPACKAGES 10
 
 //units
 // 0 = metric
@@ -62,6 +63,9 @@ struct SatTimer{
   unsigned long time4 = 0;
 };
 SatTimer gpsTime[2];
+
+//autochange
+int countValidpackages=0;
 
 // Variables for gpsseclection
 int gpsselected = 0;
@@ -294,7 +298,11 @@ void readSoftSerail(){
 
       //change Module if valid in one_line mode
       if(displayMode == 0){
-        gpsSeclection();
+        if(countValidpackages++ == TIMESOFVALIDEPACKAGES){
+          gpsSeclection();
+          countValidpackages = 0;
+        }
+        
       }
     }
 
@@ -420,7 +428,7 @@ void dispaly_oneline_select(short i){
     if(oldOneLineMode!=4){
       display_oneline(gpsstruct[0].encode, 0);
       display_oneline(gpsstruct[1].encode, 1);
-    }else if(gpsstruct[i].encode.location.isUpdated() || gpsstruct[i].encode.satellites.isUpdated()){
+    }else{
       display_oneline(gpsstruct[i].encode, i);
     }
     oldOneLineMode = 4;
