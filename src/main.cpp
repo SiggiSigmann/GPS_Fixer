@@ -20,11 +20,6 @@
 #define MULTIMODETIME 2000
 #define MULTIDISPLAYS 4
 
-//defines timeshift from
-#define TIMEOFFSET 1
-//0 = Wintertime(no offset), 1=Summertime(1 hour ofsset additional)
-#define SUMMERTIME 1
-
 //Analog Pin
 #define ANALOGPIN A0
 
@@ -77,6 +72,16 @@ int multiMode = 0;
 unsigned long modeTime;
 int smoothAnalog = 1024;
 
+//settingstimer
+unsigned long pressedtimer = 0;
+bool showSettings = false;
+bool changedSettings = false;
+// timeshift from Timeszone
+short timeoffset = 1;
+//0 = Wintertime(no offset), 1=Summertime(1 hour ofsset additional)
+short summertime = 1;
+bool changeSettings = false;
+
 //setup struct
 void initGPSStruct(SoftwareSerial*);
 
@@ -104,6 +109,11 @@ void display_multi_1(TinyGPSPlus gps, short row);
 void display_multi_2(TinyGPSPlus gps, short row);
 void display_multi_3(TinyGPSPlus gps, short row);
 void display_multi_4(TinyGPSPlus gps, short row);
+
+//settingsdisplay
+void display_settings_init();
+void display_settings();
+void handelPoti();
 
 //time calc
 void calcTime();
@@ -145,8 +155,9 @@ void setup() {
   lcd.createChar(1,underlinedTwo);
 
   //Serial communication
+  Serial.begin(BAUDRATE);
   #if DEBUG > 0
-    Serial.begin(BAUDRATE);
+    
     while (!Serial) {}
 
     Serial.println("setup");
@@ -178,10 +189,31 @@ void initGPSStruct(SoftwareSerial* soft){
 
 //### Loop #######################################################################
 void loop() {
-  //loop is splitted into three parts: Read Data, update times and update display
-  readSoftSerail();
-  calcTime();
-  updateDisplay();
+  if(!digitalRead(2)){
+    pressedtimer = 0;
+    Serial.println("löschen");
+    changedSettings = false;
+  }else{
+    if(!changedSettings && pressedtimer  != 0 && (millis() - pressedtimer)>2000){
+      showSettings = !showSettings;
+      changedSettings = true;
+      if(showSettings){
+        display_settings_init();
+      }
+    }
+  }
+  
+  if(showSettings){
+    //display and change settings
+    display_settings();
+    handelPoti();
+    lcd.display();
+  }else{
+    //loop is splitted into three parts: Read Data, update times and update display
+    readSoftSerail();
+    calcTime();
+    updateDisplay();
+  }
 }
 
 /*### interrupt #################################################################
@@ -196,6 +228,8 @@ void modeSelection(){
   //remove lcdOnMissing so lcd could be updated
   gpsstruct[0].lcdOnMissing = false;
   gpsstruct[1].lcdOnMissing = false;
+  pressedtimer = millis();
+  Serial.println("set");
 }
 
 void gpsSeclection(){
@@ -203,6 +237,7 @@ void gpsSeclection(){
   gpsselected = (gpsselected+1) % GPSNUMBER;
   multiMode = 0;
   modeTime = millis();
+  changeSettings = false;
 }
 
 /*### Serial read #################################################################
@@ -244,8 +279,6 @@ void readSoftSerail(){
       #if DEBUG > 2
         Serial.println("  satellites valid");
       #endif
-
-      
 
       //change Module if valid in one_line mode
       if(displayMode == 0){
@@ -586,7 +619,7 @@ void display_multi_1(TinyGPSPlus gps, short name){
 }
 
 //calculate day per month
-int  getNumberOfDays(int month, int year){
+int getNumberOfDays(int month, int year){
 	//leap year condition, if month is 2
 	if( month == 2){
 		if((year%400==0) || (year%4==0 && year%100!=0)){
@@ -609,7 +642,7 @@ void display_multi_2(TinyGPSPlus gps, short name){
 
   //calc offsets
   if(gps.time.isValid()){
-    hour = gps.time.hour() + TIMEOFFSET + SUMMERTIME;
+    hour = gps.time.hour() + timeoffset + summertime;
     dayoffset = hour/24;
     if(dayoffset) hour-=24;
   }
@@ -735,6 +768,7 @@ void display_multi_3(TinyGPSPlus gps, short name){
   lcd.print("     ");
 }
 
+//hight, hdop
 void display_multi_4(TinyGPSPlus gps, short name){
   //first line
   lcd.setCursor(0, 0);
@@ -792,4 +826,68 @@ void display_multi_4(TinyGPSPlus gps, short name){
     lcd.print("----");
   }
   lcd.print("       ");
+}
+
+/*### display settings ########################################################
+ * update display
+*/
+void display_settings_init(){
+  for(short row=0; row<2;row++){
+    //name
+    lcd.setCursor(0, row);
+    
+    lcd.write(row);
+    
+    lcd.print(" ");
+    if(row == 0){
+      lcd.print("TS: " + String(timeoffset) + "           ");
+    }else{
+      lcd.print("SW: " + String(summertime) + "           ");
+    }
+  }
+}
+
+void display_settings(){
+  for(short row=0; row<2;row++){
+    //name
+    lcd.setCursor(0, row);
+    if(row == gpsselected){
+      lcd.write(row);
+    }else{
+      lcd.print(row+1);
+    }
+    lcd.print(" ");
+    if(row == 0){
+      lcd.print("TS: ");
+    }else{
+      lcd.print("SW: ");
+    }
+  }
+}
+
+void handelPoti(){
+  int newsmoothAnalog = (smoothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
+  if(abs(newsmoothAnalog-smoothAnalog)>10){
+    changeSettings = true;
+  }
+  smoothAnalog = newsmoothAnalog;
+  lcd.setCursor(6, gpsselected);
+  if(gpsselected == 0){
+    //sw time 0 / 1019
+    if(changeSettings){
+      short parsedAnalog = smoothAnalog/39;
+      parsedAnalog -= 12;
+      timeoffset = parsedAnalog;
+    }
+    lcd.print(timeoffset);
+    lcd.print("                 ");
+  }else{
+    //sw time 0 / 1019
+    if(changeSettings){
+      short parsedAnalog = smoothAnalog/512;
+      summertime = parsedAnalog;
+    }
+    lcd.print(summertime);
+    lcd.print("                 ");
+  }
 }
