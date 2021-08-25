@@ -31,6 +31,12 @@
 //Debug level
 #define DEBUG 0
 
+//satelites timer definition
+#define SATNUMBER1 5
+#define SATNUMBER2 7
+#define SATNUMBER3 10
+#define SATNUMBER4 12
+
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
 const int rs = 6, en = 7, d4 = 5, d5 = 4, d6 = 13, d7 = 12;
@@ -51,6 +57,16 @@ struct GPSStruct {
 };
 GPSStruct gpsstruct[GPSNUMBER];
 
+//store time takes to discovers x satelites
+struct SatTimer{
+  unsigned long start = 0;
+  unsigned long time1 = 0;
+  unsigned long time2 = 0;
+  unsigned long time3 = 0;
+  unsigned long time4 = 0;
+};
+SatTimer gpsTime[2];
+
 // Variables for gpsseclection
 int gpsselected = 0;
 short initGPSIndex = 0;
@@ -70,15 +86,27 @@ void gpsSeclection();
 
 //process methods
 void readSoftSerail();
-void updateDisplay();
 
 //display methods
+void updateDisplay();
+
+//display oneline
+short oldOneLineMode = 0;
+void display_oneline_handl();
 void display_oneline(TinyGPSPlus gps, short row);
+void display_time(TinyGPSPlus gps, short row, short time);
+void dispaly_oneline_select(short i);
+String formattetTime(unsigned long seconds);
+
+//multimode displays
 void display_multi(TinyGPSPlus gps, short row);
 void display_multi_1(TinyGPSPlus gps, short row);
 void display_multi_2(TinyGPSPlus gps, short row);
 void display_multi_3(TinyGPSPlus gps, short row);
 void display_multi_4(TinyGPSPlus gps, short row);
+
+//time calc
+void calcTime();
 
 //underlined caracters
 byte underlinedTwo[] = {
@@ -150,8 +178,9 @@ void initGPSStruct(SoftwareSerial* soft){
 
 //### Loop #######################################################################
 void loop() {
-  //loop is splitted into two parts: Read Data and update display
+  //loop is splitted into three parts: Read Data, update times and update display
   readSoftSerail();
+  calcTime();
   updateDisplay();
 }
 
@@ -184,6 +213,9 @@ void readSoftSerail(){
 
   if(gpsstruct[gpsselected].soft->available() > 0){
     //update last update time
+    if(gpsstruct[gpsselected].missing){
+        gpsTime[gpsselected].start = millis();
+      }
     gpsstruct[gpsselected].missing = false;
     gpsstruct[gpsselected].lastTimeSinceData = millis();
 
@@ -212,6 +244,8 @@ void readSoftSerail(){
       #if DEBUG > 2
         Serial.println("  satellites valid");
       #endif
+
+      
 
       //change Module if valid in one_line mode
       if(displayMode == 0){
@@ -242,6 +276,22 @@ void readSoftSerail(){
         gpsSeclection();
       }
     }
+  }  
+}
+
+/* ### timeing #######################################################################
+ * calc times for sateiltes
+*/
+void calcTime(){
+  int sats = gpsstruct[gpsselected].encode.satellites.value();
+  if(sats >= SATNUMBER1 && gpsTime[gpsselected].time1 == 0){
+    gpsTime[gpsselected].time1 = millis() - gpsTime[gpsselected].start;
+  }else if(sats >= SATNUMBER2 && gpsTime[gpsselected].time2 == 0){
+    gpsTime[gpsselected].time2 = millis() - gpsTime[gpsselected].start;
+  }else if(sats >= SATNUMBER3 && gpsTime[gpsselected].time3 == 0){
+    gpsTime[gpsselected].time3 = millis() - gpsTime[gpsselected].start;
+  }else if(sats >= SATNUMBER4 && gpsTime[gpsselected].time4 == 0){
+    gpsTime[gpsselected].time4 = millis() - gpsTime[gpsselected].start;
   }
 }
 
@@ -251,26 +301,7 @@ void readSoftSerail(){
 void updateDisplay(){
   switch(displayMode){
     case 0:
-      //oneline mode
-      for (short i = 0; i < GPSNUMBER; i++){
-        //check if update is needed
-        if(!gpsstruct[i].missing){
-          gpsstruct[i].lcdOnMissing = false;
-
-          //check if update is needed
-          if(gpsstruct[i].encode.location.isUpdated() || gpsstruct[i].encode.satellites.isUpdated()){
-            display_oneline(gpsstruct[i].encode, i);
-          }
-        }else{
-          //no module is connected
-          if(!gpsstruct[i].lcdOnMissing){
-            gpsstruct[i].lcdOnMissing = true;
-            lcd.setCursor(0,i);
-            lcd.print("Missing         ");
-          }
-        }
-      }
-      lcd.setCursor(0,gpsselected);
+      display_oneline_handl();
       break;
 
     case 1:
@@ -287,6 +318,59 @@ void updateDisplay(){
         lcd.print("                ");
       }
       break;
+  }
+}
+
+/*### display one line ########################################################
+ * update display
+*/
+//handel one line mode display stuff
+void display_oneline_handl(){
+  //oneline mode
+  for (short i = 0; i < GPSNUMBER; i++){
+    //check if update is needed
+    if(!gpsstruct[i].missing){
+      gpsstruct[i].lcdOnMissing = false;
+
+      //check if update is needed
+        dispaly_oneline_select(i);
+      
+    }else{
+      //no module is connected
+      if(!gpsstruct[i].lcdOnMissing){
+        gpsstruct[i].lcdOnMissing = true;
+        lcd.setCursor(0,i);
+        lcd.print("Missing         ");
+      }
+    }
+  }
+  lcd.setCursor(0,gpsselected);
+}
+
+//select mothod to display from poti
+void dispaly_oneline_select(short i){
+  //check analog value and dislay corresponding display
+  smoothAnalog = (smoothAnalog*0.8)+(analogRead(ANALOGPIN)*0.2);
+  if(smoothAnalog>820){
+    oldOneLineMode = 0;
+    display_time(gpsstruct[i].encode, i,3);
+  }else if(smoothAnalog>615){
+    oldOneLineMode = 1;
+    display_time(gpsstruct[i].encode, i,2);
+  }else if(smoothAnalog>412){
+    oldOneLineMode = 2;
+    display_time(gpsstruct[i].encode, i,1);
+  }else if(smoothAnalog>205){
+    oldOneLineMode = 3;
+    display_time(gpsstruct[i].encode, i,0);
+  }else {
+    if(oldOneLineMode!=4){
+      display_oneline(gpsstruct[0].encode, 0);
+      display_oneline(gpsstruct[1].encode, 1);
+    }else if(gpsstruct[i].encode.location.isUpdated() || gpsstruct[i].encode.satellites.isUpdated()){
+      display_oneline(gpsstruct[i].encode, i);
+    }
+    oldOneLineMode = 4;
   }
 }
 
@@ -331,6 +415,104 @@ void display_oneline(TinyGPSPlus gps, short row){
   lcd.print(" ");
 }
 
+//display gps per line
+void display_time(TinyGPSPlus gps, short row, short time){
+  //name
+  lcd.setCursor(0, row);
+  if(row == gpsselected){
+    lcd.write(row);
+  }else{
+    lcd.print(row+1);
+  }
+  lcd.print(":");
+
+  //print time it took to find x satelites)
+  switch (time){
+    case 0:
+      lcd.print(SATNUMBER1);
+      if(SATNUMBER1 < 10){
+        lcd.print(" ");
+      }
+      lcd.print(" ");
+      lcd.print(formattetTime(gpsTime[row].time1));
+      break;
+    case 1:
+      lcd.print(SATNUMBER2);
+      if(SATNUMBER2 < 10){
+        lcd.print(" ");
+      }
+      lcd.print(" ");
+      lcd.print(formattetTime(gpsTime[row].time2));
+      break;
+      
+    case 2:
+      lcd.print(SATNUMBER3);
+      if(SATNUMBER3 < 10){
+        lcd.print(" ");
+      }
+      lcd.print(" ");
+      lcd.print(formattetTime(gpsTime[row].time3));
+      break;
+
+    case 3:
+      lcd.print(SATNUMBER4);
+      if(SATNUMBER4 < 10){
+        lcd.print(" ");
+      }
+      lcd.print(" ");
+      lcd.print(formattetTime(gpsTime[row].time4));
+      break;
+  }
+}
+
+//format time
+String formattetTime(unsigned long seconds){
+  String formattet;
+  unsigned long secondstemp = seconds;
+
+  short hours = secondstemp / 3600000;
+  secondstemp = secondstemp % 3600000; 
+  if(hours>99){
+    formattet = "+9:";
+  }else{
+    formattet = String(hours) +":";
+  }
+
+  short minutes = secondstemp / 60000;
+  secondstemp = secondstemp % 60000;
+  if(minutes<10){
+    formattet += "0" + String(minutes) + ":";
+  }else{
+    formattet += String(minutes) + ":";
+  }
+
+  short sec = secondstemp / 1000;
+  secondstemp = secondstemp % 1000;
+  if(sec<10){
+    formattet += "0" + String(sec) + ":";
+  }else{
+    formattet += String(sec) + ":";
+  }
+
+  if(secondstemp<10){
+    formattet += "00" + String(secondstemp) ;
+  }else if(secondstemp<100){
+    formattet += "0" + String(secondstemp) ;
+  }else{
+    formattet += String(secondstemp);
+  }
+
+  short padding = 11- formattet.length();
+  while(padding-- !=0){
+    formattet = " "+formattet;
+  }
+
+  return formattet;
+}
+
+/*### display multi mode ########################################################
+ * update display
+*/
 //display multimode with more columns
 void display_multi(TinyGPSPlus gps, short row){
   int mode = multiMode;
