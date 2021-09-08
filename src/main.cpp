@@ -178,10 +178,11 @@ void setup(){
   lcd.createChar(1, underlinedTwo);
 
   //Serial communication
-  Serial.begin(BAUDRATE);
-  Serial.println("setup");
+
   #if DEBUG > 0
-    
+      Serial.begin(BAUDRATE);
+  Serial.println("setup");
+
     while (!Serial){}
 
     Serial.println("setup");
@@ -195,7 +196,6 @@ void setup(){
 
   //set mode timer
   modeTime = millis();
-  Serial.println("done");
 }
 
 //init struct
@@ -231,9 +231,6 @@ void loop(){
         EEPROM.put(addressdisplayduration, displayduration);
       }
     }
-      
-    Serial.println("setup");
-
   }
 
   if (showSettings){
@@ -265,6 +262,7 @@ void modeSelection(){
 
   //settings
   settingsdisplay = (settingsdisplay + 1) % SETTINGSDISPLAY;
+  changeSettings = false;
 }
 
 void gpsSeclection(){
