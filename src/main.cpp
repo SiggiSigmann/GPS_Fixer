@@ -916,8 +916,12 @@ void display_settings(){
       lcd.print(" ");
       if (row == 0){
         lcd.print("TS: ");
+        lcd.print(timeoffset);
+        lcd.print("                 ");
       }else{
         lcd.print("SW: ");
+        lcd.print(summertime);
+        lcd.print("                 ");
       }
     }
   }else{
@@ -932,8 +936,12 @@ void display_settings(){
       lcd.print(" ");
       if (row == 0){
         lcd.print("packets: ");
+        lcd.print(maxNumberOfPackages);
+      lcd.print("                 ");
       }else{
-        lcd.print("nexttime: ");
+        lcd.print("nexttime:");
+        lcd.print(displayduration);
+      lcd.print("                 ");
       }
     }
   }
@@ -947,7 +955,7 @@ void handelPoti(){
   smoothAnalog = newsmoothAnalog;
 
   if (settingsdisplay == 0){
-    lcd.setCursor(6, gpsselected);
+    //lcd.setCursor(6, gpsselected);
     if (gpsselected == 0){
       //sw time 0 / 1019
       if (changeSettings){
@@ -955,35 +963,35 @@ void handelPoti(){
         parsedAnalog -= 12;
         timeoffset = parsedAnalog;
       }
-      lcd.print(timeoffset);
-      lcd.print("                 ");
+      //lcd.print(timeoffset);
+      //lcd.print("                 ");
     }else{
       //sw time 0 / 1019
       if (changeSettings){
         short parsedAnalog = smoothAnalog / 512;
         summertime = parsedAnalog;
       }
-      lcd.print(summertime);
-      lcd.print("                 ");
+      //lcd.print(summertime);
+      //lcd.print("                 ");
     }
   }else{
-    lcd.setCursor(11, gpsselected);
+    //lcd.setCursor(11, gpsselected);
     if (gpsselected == 0){
       //sw time 0 / 1019
       if (changeSettings){
         short parsedAnalog = smoothAnalog / 10;
         maxNumberOfPackages = parsedAnalog;
       }
-      lcd.print(maxNumberOfPackages);
-      lcd.print("                 ");
+      //lcd.print(maxNumberOfPackages);
+      //lcd.print("                 ");
     }else{
       //sw time 0 / 1019
       if (changeSettings){
         short parsedAnalog = smoothAnalog / 10;
-        displayduration = parsedAnalog * 40;
+        displayduration = parsedAnalog * 100;
       }
-      lcd.print(displayduration);
-      lcd.print("                 ");
+      //lcd.print(displayduration);
+      //lcd.print("                 ");
     }
   }
 }
