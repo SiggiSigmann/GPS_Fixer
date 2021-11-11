@@ -5,6 +5,17 @@ The GPS Data can be displayed in two modes. The first mode "One_line mode" shows
 
 ![One_Line Mode](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/O.png)
 
+By turning the potetiometer in "One_line Mode" the a time will be displayed. This time displays how long it took to detect 5, 7, 10 or 12 Satelites. If that amount wasn't fount it displayes 0:00:00.000.
+
+E.G:
+You can the that it took 8 Minutes and 4 Seconds to finde 5 satelites for GPS 1 and 10 Minutes and 37 Seconds to finde 8. 10 and 12 Satelits where never reached.
+![EG Start](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/EG_start.png)
+![EG 5](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/EG_5.png)
+![EG 7](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/EG_7.png)
+![EG 10](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/EG_10.png)
+![EG 12](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/EG_12.png)
+
+
 
 The "Mulit_line Mode" only shows information from one Module. It switches between 4 different information pages. So it can display the information with much higher permission. By using the Potentiometer( connected to A0 ) the user can choose between the 4 different pages or a cycle mode. In the cycle mode, a new age will be displayed every 2 seconds.
 First frame for GPS Module 2:
@@ -20,7 +31,7 @@ Frame 2,3,4 for GPS Module 1:
 Invalid data is display as "--". This will change to the actual data if they become valid:
 
 ![Invalide](https://raw.githubusercontent.com/SiggiSigmann/GPS_Fixer/main/img/invalide.png)
-
+ 
 To switch between the display mode a button connected to Pin 2 can be used. A second button connected to Pin 3 can be used to change the GPS module displayed or updated. In "One_line mode" the module which is currently read is underlined.
 
 # Customizing
